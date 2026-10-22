@@ -63,6 +63,9 @@ public class PersonalDimensionData extends SavedData {
     private String shelterName = "";
     private int shelterLevel = 0;
     private net.minecraft.core.BlockPos shelterEntry;
+    private boolean shelterEntryLocked;
+    private float shelterEntryYaw;
+    private float shelterEntryPitch;
 
     public PersonalDimensionData() {}
 
@@ -85,6 +88,9 @@ public class PersonalDimensionData extends SavedData {
         data.moonPhaseCycle = !tag.contains(TAG_MOON_PHASE_CYCLE) || tag.getBoolean(TAG_MOON_PHASE_CYCLE);
         data.followOverworldMoonPhase = tag.getBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE);
         data.shelterLevel = Math.max(0, Math.min(4, tag.getInt(TAG_SHELTER_LEVEL)));
+        data.shelterEntryLocked = tag.getBoolean("ShelterEntryLocked");
+        data.shelterEntryYaw = tag.getFloat("ShelterEntryYaw");
+        data.shelterEntryPitch = tag.getFloat("ShelterEntryPitch");
         data.shelterName = tag.getString(TAG_SHELTER_NAME);
         if (tag.contains(TAG_SHELTER_ENTRY, 10)) {
             CompoundTag entry = tag.getCompound(TAG_SHELTER_ENTRY);
@@ -109,6 +115,9 @@ public class PersonalDimensionData extends SavedData {
         tag.putBoolean(TAG_MOON_PHASE_CYCLE, this.moonPhaseCycle);
         tag.putBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE, this.followOverworldMoonPhase);
         tag.putInt(TAG_SHELTER_LEVEL, shelterLevel);
+        tag.putBoolean("ShelterEntryLocked", shelterEntryLocked);
+        tag.putFloat("ShelterEntryYaw", shelterEntryYaw);
+        tag.putFloat("ShelterEntryPitch", shelterEntryPitch);
         tag.putString(TAG_SHELTER_NAME, shelterName);
         if (shelterEntry != null) {
             CompoundTag entry = new CompoundTag();
@@ -139,6 +148,17 @@ public class PersonalDimensionData extends SavedData {
     }
 
     public net.minecraft.core.BlockPos getShelterEntry() { return shelterEntry; }
+    public boolean isShelterEntryLocked() { return shelterEntryLocked; }
+    public float getShelterEntryYaw() { return shelterEntryYaw; }
+    public float getShelterEntryPitch() { return shelterEntryPitch; }
+    public void lockShelterEntry(net.minecraft.core.BlockPos pos, float yaw, float pitch) {
+        setShelterEntry(pos);
+        shelterEntryYaw = yaw;
+        shelterEntryPitch = pitch;
+        shelterEntryLocked = true;
+        setDirty();
+    }
+    public void unlockShelterEntry() { shelterEntryLocked = false; setDirty(); }
 
     /** 呼叫端必須先驗證擁有者、可站立空間及目前土地邊界。 */
     public void setShelterEntry(net.minecraft.core.BlockPos pos) {
