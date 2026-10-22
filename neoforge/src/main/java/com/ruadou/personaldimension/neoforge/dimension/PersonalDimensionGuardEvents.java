@@ -1,6 +1,11 @@
 package com.ruadou.personaldimension.neoforge.dimension;
 
 import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import com.ruadou.personaldimension.shelter.ShelterUpgradeRules;
+import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket;
 import java.util.UUID;
 
 import com.ruadou.personaldimension.dimension.FriendVisitorTeleporterService;
@@ -37,6 +42,8 @@ import org.slf4j.LoggerFactory;
 public final class PersonalDimensionGuardEvents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("Personaldimension");
+
+    private static final Map<UUID, String> LAST_BORDER_STATE = new ConcurrentHashMap<>();
 
     private PersonalDimensionGuardEvents() {}
 
@@ -122,13 +129,29 @@ public final class PersonalDimensionGuardEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
         if (ModDimensions.ownerOf(level.dimension()).isEmpty()) {
-            LAST_DIMENSION.remove(player.getUUID());
+            // Restore the real server border after leaving a shelter. Never mutate it.
+            if (LAST_BORDER_STATE.remove(player.getUUID()) != null) {
+                player.connection.send(new ClientboundInitializeBorderPacket(level.getWorldBorder()));
+            }
             return;
         }
 
         PersonalDimensionData data = level.getDataStorage().computeIfAbsent(
             PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         int shelterLevel = data.getShelterLevel();
+        String state = level.dimension().location() + ":" + shelterLevel;
+        if (!state.equals(LAST_BORDER_STATE.get(player.getUUID()))) {
+            // Send a vanilla border packet to this client only. Unlike /worldborder,
+            // this never changes the shared overworld border or other players' views.
+            WorldBorder visualBorder = new WorldBorder();
+            visualBorder.setCenter(0.5D, 0.5D);
+            visualBorder.setSize(ShelterUpgradeRules.size(shelterLevel));
+            player.connection.send(new ClientboundInitializeBorderPacket(visualBorder));
+            LAST_BORDER_STATE.put(player.getUUID(), state);
+            LOGGER.info("[Personal Shelter] Synced client border: player={}, dimension={}, level={}, size={}",
+                player.getGameProfile().getName(), level.dimension().location(), shelterLevel,
+                ShelterUpgradeRules.size(shelterLevel));
+        }
         double x = player.getX();
         double z = player.getZ();
         if (ShelterBoundary.containsPosition(shelterLevel, x, z)) return;
