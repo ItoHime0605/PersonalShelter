@@ -3,6 +3,8 @@ package com.ruadou.personaldimension.network;
 import com.ruadou.personaldimension.PersonalDimension;
 import com.ruadou.personaldimension.platform.Platform;
 import com.ruadou.personaldimension.friend.FriendService;
+import com.ruadou.personaldimension.friend.VisitShelterEntry;
+import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -31,7 +33,15 @@ public record RequestVisitListPacket() implements CustomPacketPayload {
         if (server == null) {
             return;
         }
-        Platform.sendToPlayer(player, new VisitListPacket(FriendService.visitableFor(server, player.getUUID())));
+        java.util.List<VisitShelterEntry> entries = new java.util.ArrayList<>();
+        for (var owner : FriendService.visitableFor(server, player.getUUID())) {
+            var level = server.getLevel(Platform.levelKeyFor(owner.id()));
+            if (level == null) continue;
+            var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+            String title = data.getShelterName().isBlank() ? owner.name() + "的個人空間" : data.getShelterName();
+            entries.add(new VisitShelterEntry(owner.id(), owner.name(), title));
+        }
+        Platform.sendToPlayer(player, new VisitListPacket(entries));
     }
 
     @Override
