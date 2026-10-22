@@ -33,6 +33,7 @@ public final class NetworkPackets {
         new PacketEntry(RequestDimensionInfoPacket.TYPE, RequestDimensionInfoPacket.STREAM_CODEC),
         new PacketEntry(RequestShelterNamePacket.TYPE, RequestShelterNamePacket.STREAM_CODEC),
         new PacketEntry(SetShelterNamePacket.TYPE, SetShelterNamePacket.STREAM_CODEC),
+        new PacketEntry(SetShelterEntryLockPacket.TYPE, SetShelterEntryLockPacket.STREAM_CODEC),
         new PacketEntry(SetDimensionTimePacket.TYPE, SetDimensionTimePacket.STREAM_CODEC),
         new PacketEntry(SetDimensionDaylightPacket.TYPE, SetDimensionDaylightPacket.STREAM_CODEC),
         new PacketEntry(SetDimensionWeatherPacket.TYPE, SetDimensionWeatherPacket.STREAM_CODEC),
