@@ -38,7 +38,7 @@ public record RequestVisitListPacket() implements CustomPacketPayload {
             var level = server.getLevel(Platform.levelKeyFor(owner.id()));
             if (level == null) continue;
             var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
-            String title = data.getShelterName().isBlank() ? owner.name() + "的個人空間" : data.getShelterName();
+            String title = data.getShelterName().isBlank() ? owner.name() + "的私人土地" : data.getShelterName();
             entries.add(new VisitShelterEntry(owner.id(), owner.name(), title));
         }
         Platform.sendToPlayer(player, new VisitListPacket(entries));
