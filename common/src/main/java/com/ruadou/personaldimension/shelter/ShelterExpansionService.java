@@ -69,6 +69,8 @@ public final class ShelterExpansionService {
         // The caller must still verify ownership, take the permit transactionally,
         // and save the dimension data on the server thread.
         data.setShelterLevel(permitLevel);
+        world.getWorldBorder().setCenter(0.0D, 0.0D);
+        world.getWorldBorder().setSize(newSize);
         return Result.SUCCESS;
     }
 
