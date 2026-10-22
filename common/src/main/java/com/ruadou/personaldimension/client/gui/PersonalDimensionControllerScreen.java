@@ -6,6 +6,10 @@ import com.ruadou.personaldimension.network.OpenShelterUpgradePacket;
 import com.ruadou.personaldimension.network.PersonalDimensionTravelPacket;
 import com.ruadou.personaldimension.network.PublicDimensionPacket;
 import com.ruadou.personaldimension.network.RequestDimensionInfoPacket;
+import com.ruadou.personaldimension.network.RequestShelterNamePacket;
+import com.ruadou.personaldimension.network.SetShelterNamePacket;
+import com.ruadou.personaldimension.client.ClientShelterName;
+import net.minecraft.client.gui.components.EditBox;
 import com.ruadou.personaldimension.platform.Platform;
 
 import net.minecraft.client.Minecraft;
@@ -66,6 +70,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private int refreshCounter;
 
     private Button travelButton;
+    private boolean renaming;
+    private EditBox shelterNameInput;
 
     // 当前激活的设置子页（时间 / 天气），非设置子页时为 null；tick/keyPressed 委派给它
     private SettingsSubPanel activePanel;
@@ -86,6 +92,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     protected void init() {
         super.init();
         this.travelButton = null;
+        this.shelterNameInput = null;
         this.activePanel = null;
         // 注意：teleportPanel 不在此重置——rebuildPanel() 会触发 init()，
         // 若每次 new 新实例则 selectedIndex/scrollOffset 丢失，导致编辑和滚动失效。
@@ -122,6 +129,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
         // 打开即请求一次，避免首帧信息为空
         requestInfo();
+        Platform.sendToServer(new RequestShelterNamePacket());
     }
 
     // —— 供同包设置子面板访问 PanelScreen 的 protected 骨架（跨包不可直接访问）——
@@ -188,6 +196,24 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         }
         int btnWidth = 146;
         int halfWidth = 69;
+        if (ownDimensionExists()) {
+            int renameY = contentTop() + PADDING + 16;
+            int nameX = contentLeft();
+            int available = contentWidth();
+            if (renaming) {
+                shelterNameInput = new EditBox(this.font, nameX, renameY, available - 62, 20,
+                    Component.literal("個人空間名稱"));
+                shelterNameInput.setMaxLength(16);
+                shelterNameInput.setValue(ClientShelterName.get());
+                shelterNameInput.setHint(Component.literal("輸入名稱"));
+                this.addRenderableWidget(shelterNameInput);
+                this.addRenderableWidget(new FlatButton(Component.literal("儲存"),
+                    nameX + available - 58, renameY, 58, 20, b -> saveShelterName()));
+            } else {
+                this.addRenderableWidget(new FlatButton(Component.literal("改名"),
+                    nameX + available - 52, renameY, 52, 20, b -> { renaming = true; rebuildWidgets(); }));
+            }
+        }
         int gap = 8;
         int x = this.leftPos + (PANEL_WIDTH - btnWidth) / 2;
         int travelY = this.topPos + PANEL_HEIGHT - PADDING - 20;
@@ -239,6 +265,13 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
      * "确定"为 {@link ModernHoldButton}：按住时红色进度从左到右填充，满后触发并闪烁一次表示已执行，
      * 松手或移出按钮则进度回落——比 5 秒倒计时更直观且可中断。取消随时可点，恢复正常信息页。
      */
+    private void saveShelterName() {
+        if (shelterNameInput == null) return;
+        Platform.sendToServer(new SetShelterNamePacket(shelterNameInput.getValue()));
+        renaming = false;
+        rebuildWidgets();
+    }
+
     private void addDeleteConfirmButtons() {
         int btnWidth = 69;
         int gap = 8;
@@ -449,6 +482,10 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // 设置子页优先处理（如时间输入框聚焦时回车应用）
+        if (renaming && shelterNameInput != null && (keyCode == 257 || keyCode == 335)) {
+            saveShelterName();
+            return true;
+        }
         if (this.activePanel != null && this.activePanel.keyPressed(keyCode)) {
             return true;
         }
