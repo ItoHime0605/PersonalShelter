@@ -7,10 +7,10 @@ logoBlur = false
 [[mods]]
 modId = "personaldimension"
 version = "${version}"
-displayName = "Personal Dimension"
-authors = "RUA_DOU"
+displayName = "Personal Shelter"
+authors = "RUA_DOU (original PersonalDimension); Personal Shelter contributors"
 description = '''
-Create configurable personal dimensions. Use a controller to adjust time, weather and mob spawning. Support public dimensions and player access permissions.
+Personal Shelter is a derivative of PersonalDimension by RUA_DOU. Create and manage a private personal dimension with controller settings and player permissions.
 '''
 
 [[dependencies.personaldimension]]
