@@ -13,14 +13,22 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.item.ItemStack;
 
 /** Server-authoritative single permit slot, centered over the player inventory. */
 public final class ShelterUpgradeMenu extends AbstractContainerMenu {
     private final Container permit = new SimpleContainer(1);
+    private final DataSlot levelData = DataSlot.standalone();
+    public int shelterLevel() { return levelData.get(); }
 
     public ShelterUpgradeMenu(int id, Inventory inventory) {
         super(ModMenus.SHELTER_UPGRADE_MENU.get(), id);
+        if (inventory.player instanceof ServerPlayer actor && actor.level() instanceof ServerLevel world) {
+            PersonalDimensionData data = world.getDataStorage().get(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+            levelData.set(data == null ? 0 : data.getShelterLevel());
+        }
+        addDataSlot(levelData);
         addSlot(new Slot(permit, 0, 80, 57) {
             @Override public boolean mayPlace(ItemStack stack) { return isPermit(stack); }
             @Override public int getMaxStackSize() { return 1; }
@@ -66,6 +74,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
         }
         ShelterPermitTransaction.Result result = ShelterPermitTransaction.tryUpgrade(actor, shelter, data, permit.getItem(0));
         if (result == ShelterPermitTransaction.Result.SUCCESS) {
+            levelData.set(data.getShelterLevel());
             permit.setChanged();
             broadcastChanges();
             actor.sendSystemMessage(Component.literal("土地擴張成功！"));
