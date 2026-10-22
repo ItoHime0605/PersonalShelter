@@ -377,10 +377,6 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                     Component.translatable("gui.personaldimension.controller.settings.shelter_upgrade"),
                     x, firstY + 4 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
-            this.addRenderableWidget(new FlatButton(
-                    Component.translatable("gui.personaldimension.controller.settings.spawn_entry"),
-                    x, firstY + 3 * (20 + PADDING), btnWidth, 20,
-                    b -> this.minecraft.setScreen(new SpawnControlScreen(this))));
         }
     }
 
