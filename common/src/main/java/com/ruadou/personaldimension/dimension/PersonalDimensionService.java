@@ -560,21 +560,31 @@ public final class PersonalDimensionService {
         }
         TravelMemory mem = Platform.getTravelMemory(player);
         Optional<TravelPoint> ownPoint = mem.own();
-        if (ownPoint.isPresent()) {
+        PersonalDimensionData entryData = own.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+        if (entryData.isShelterEntryLocked() && entryData.getShelterEntry() != null) {
+            BlockPos p = entryData.getShelterEntry();
+            if (com.ruadou.personaldimension.shelter.ShelterUpgradeRules.inside(entryData.getShelterLevel(), p.getX(), p.getZ())
+                && own.getBlockState(p).getCollisionShape(own, p).isEmpty()
+                && own.getBlockState(p.above()).getCollisionShape(own, p.above()).isEmpty()
+                && !own.getBlockState(p.below()).getCollisionShape(own, p.below()).isEmpty()) {
+                player.teleportTo(own, p.getX() + 0.5D, p.getY(), p.getZ() + 0.5D,
+                    entryData.getShelterEntryYaw(), entryData.getShelterEntryPitch());
+            } else teleportToSafeShelterSpawn(player, own);
+        } else if (ownPoint.isPresent()) {
             TravelPoint p = ownPoint.get();
             player.teleportTo(own, p.x(), p.y(), p.z(), p.yaw(), p.pitch());
         } else {
-            // Existing dimension: never regenerate the platform on a return visit.
-            own.getChunk(0, 0);
-            int safeY = Math.max(own.getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0), 0);
-            BlockPos spawn = new BlockPos(0, safeY, 0);
-            player.teleportTo(own,
-                spawn.getX() + 0.5D, spawn.getY(), spawn.getZ() + 0.5D,
-                player.getYRot(), player.getXRot());
+            teleportToSafeShelterSpawn(player, own);
         }
         player.sendSystemMessage(
             Component.translatable("personaldimension.message.entered", own.dimension().location().toString()));
         sendDimensionInfoToPlayer(player);
+    }
+
+    private static void teleportToSafeShelterSpawn(ServerPlayer player, ServerLevel own) {
+        own.getChunk(0, 0);
+        int safeY = Math.max(own.getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0), 0);
+        player.teleportTo(own, 0.5D, safeY, 0.5D, player.getYRot(), player.getXRot());
     }
 
     /** 传送回个人维度之外的记忆点；无记忆点或目标维度已不存在时兜底回主世界出生点。 */
