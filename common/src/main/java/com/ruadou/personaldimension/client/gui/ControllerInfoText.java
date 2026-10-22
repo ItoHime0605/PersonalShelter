@@ -1,6 +1,7 @@
 package com.ruadou.personaldimension.client.gui;
 
 import com.ruadou.personaldimension.client.ClientDimensionInfo;
+import com.ruadou.personaldimension.client.ClientShelterName;
 import com.ruadou.personaldimension.client.DimensionInfoSnapshot;
 import com.ruadou.personaldimension.platform.Platform;
 
@@ -65,7 +66,7 @@ public final class ControllerInfoText {
         ResourceKey<Level> personalKey = Platform.levelKeyFor(mc.player.getUUID());
         boolean created = mc.player.connection.levels().contains(personalKey);
         return created
-            ? Component.literal(personalKey.location().toString())
+            ? Component.literal(ClientShelterName.get().isBlank() ? mc.player.getGameProfile().getName() + "的個人空間" : ClientShelterName.get())
             : Component.translatable("gui.personaldimension.controller.info.dimension_uncreated");
     }
 
