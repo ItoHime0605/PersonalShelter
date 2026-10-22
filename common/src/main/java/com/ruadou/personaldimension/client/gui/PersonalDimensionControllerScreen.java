@@ -186,8 +186,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             addDeleteConfirmButtons();
             return;
         }
-        int btnWidth = 160;
-        int halfWidth = 76;
+        int btnWidth = 146;
+        int halfWidth = 69;
         int gap = 8;
         int x = this.leftPos + (PANEL_WIDTH - btnWidth) / 2;
         int travelY = this.topPos + PANEL_HEIGHT - PADDING - 20;
@@ -240,7 +240,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
      * 松手或移出按钮则进度回落——比 5 秒倒计时更直观且可中断。取消随时可点，恢复正常信息页。
      */
     private void addDeleteConfirmButtons() {
-        int btnWidth = 76;
+        int btnWidth = 69;
         int gap = 8;
         int totalWidth = btnWidth * 2 + gap;
         int x = this.leftPos + (PANEL_WIDTH - totalWidth) / 2;
@@ -375,7 +375,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(
                     Component.translatable("gui.personaldimension.controller.settings.shelter_upgrade"),
-                    x, firstY + 4 * (20 + PADDING), btnWidth, 20,
+                    x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
         }
     }
