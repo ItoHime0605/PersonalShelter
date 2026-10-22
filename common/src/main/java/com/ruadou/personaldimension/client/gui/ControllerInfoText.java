@@ -33,7 +33,7 @@ public final class ControllerInfoText {
         int cursorY = y;
 
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
-            dimensionValue(mc));
+            dimensionValue(mc), Math.max(100, maxWidth - 84));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
             Component.translatable("gui.personaldimension.controller.info.weather").append(": ").append(weatherText(info)));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
@@ -49,7 +49,11 @@ public final class ControllerInfoText {
      * 逻辑行末尾额外留 5px 间隙以区隔各条信息。返回下一条信息的起始 y。
      */
     private static int drawLine(GuiGraphics graphics, Font font, int x, int y, int maxWidth, Component text) {
-        List<FormattedCharSequence> lines = font.split(text, maxWidth);
+        return drawLine(graphics, font, x, y, maxWidth, text, maxWidth);
+    }
+
+    private static int drawLine(GuiGraphics graphics, Font font, int x, int y, int maxWidth, Component text, int lineWidth) {
+        List<FormattedCharSequence> lines = font.split(text, lineWidth);
         int sub = 0;
         for (FormattedCharSequence seq : lines) {
             graphics.drawString(font, seq, x, y + font.lineHeight * sub, ModernStyle.TEXT, false);
@@ -66,7 +70,7 @@ public final class ControllerInfoText {
         ResourceKey<Level> personalKey = Platform.levelKeyFor(mc.player.getUUID());
         boolean created = mc.player.connection.levels().contains(personalKey);
         return created
-            ? Component.literal(ClientShelterName.get().isBlank() ? mc.player.getGameProfile().getName() + "的個人空間" : ClientShelterName.get())
+            ? Component.literal(ClientShelterName.get().isBlank() ? mc.player.getGameProfile().getName() + "的私人土地" : ClientShelterName.get())
             : Component.translatable("gui.personaldimension.controller.info.dimension_uncreated");
     }
 
