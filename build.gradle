@@ -19,7 +19,7 @@ subprojects {
     apply plugin: 'maven-publish'
 
     base {
-        archivesName = "$rootProject.archives_name-$project.name"
+        archivesName = project.name == "neoforge" ? "PersonalShelter-NeoForge" : "$rootProject.archives_name-$project.name"
     }
 
     repositories {
