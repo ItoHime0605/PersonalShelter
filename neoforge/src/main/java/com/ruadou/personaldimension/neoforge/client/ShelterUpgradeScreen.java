@@ -13,7 +13,7 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
     public ShelterUpgradeScreen(ShelterUpgradeMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 176;
-        imageHeight = 194;
+        imageHeight = menu.shelterLevel() >= 4 ? 112 : 194;
         inventoryLabelY = 100;
         titleLabelX = 8;
         titleLabelY = 8;
@@ -41,6 +41,7 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
         super.containerTick();
         if (lastLevel != menu.shelterLevel()) {
             lastLevel = menu.shelterLevel();
+            imageHeight = lastLevel >= 4 ? 112 : 194;
             rebuildWidgets();
         }
     }
@@ -48,12 +49,14 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, Component.literal("土地擴張"), 8, 8, 0xFFE6E8ED, false);
         if (menu.shelterLevel() >= 4) {
+            graphics.drawString(font, Component.literal("目前土地等級：肆"), 34, 25, 0xFFE6E8ED, false);
+            graphics.drawString(font, Component.literal("土地面積：175×175"), 34, 37, 0xFFE6E8ED, false);
             String text = "你已擁有太多土地，留點給別人吧！";
             int tx = Math.max(8, (imageWidth - font.width(text)) / 2);
             if (font.width(text) > imageWidth - 16) {
-                graphics.drawString(font, Component.literal("你已擁有太多土地，"), 28, 38, 0xFFFFD38A, false);
-                graphics.drawString(font, Component.literal("留點給別人吧！"), 36, 51, 0xFFFFD38A, false);
-            } else graphics.drawString(font, Component.literal(text), tx, 38, 0xFFFFD38A, false);
+                graphics.drawString(font, Component.literal("你已擁有太多土地，"), 28, 58, 0xFFFFD38A, false);
+                graphics.drawString(font, Component.literal("留點給別人吧！"), 36, 71, 0xFFFFD38A, false);
+            } else graphics.drawString(font, Component.literal(text), tx, 58, 0xFFFFD38A, false);
             return;
         }
         String heading = "末日房產特惠！";
@@ -65,8 +68,9 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
 
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xFF20252F);
-        graphics.fill(leftPos + 6, topPos + 6, leftPos + 170, topPos + 190, 0xFF303744);
+        graphics.fill(leftPos + 6, topPos + 6, leftPos + 170, topPos + imageHeight - 6, 0xFF303744);
         if (menu.shelterLevel() < 4) graphics.fill(leftPos + 79, topPos + 56, leftPos + 97, topPos + 74, 0xFF111820);
+        if (menu.shelterLevel() >= 4) return;
         graphics.fill(leftPos + 7, topPos + 111, leftPos + 169, topPos + 188, 0xFF252B35);
         for (int row = 0; row < 3; row++)
             for (int col = 0; col < 9; col++) slotBg(graphics, 8 + col * 18, 112 + row * 18);
