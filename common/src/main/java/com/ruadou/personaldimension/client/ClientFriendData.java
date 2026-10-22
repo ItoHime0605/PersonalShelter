@@ -3,6 +3,7 @@ package com.ruadou.personaldimension.client;
 import java.util.List;
 
 import com.ruadou.personaldimension.friend.NamedPlayer;
+import com.ruadou.personaldimension.friend.VisitShelterEntry;
 
 /**
  * 客户端侧好友系统数据缓存。
@@ -16,7 +17,7 @@ public final class ClientFriendData {
     // volatile 保证网络线程写入对渲染读取可见
     private static volatile FriendDataSnapshot ownConfig;
     private static volatile List<NamedPlayer> onlinePlayers = List.of();
-    private static volatile List<NamedPlayer> visitList = List.of();
+    private static volatile List<VisitShelterEntry> visitList = List.of();
 
     public static void updateConfig(FriendDataSnapshot snapshot) {
         ownConfig = snapshot;
@@ -34,11 +35,11 @@ public final class ClientFriendData {
         return onlinePlayers;
     }
 
-    public static void updateVisitList(List<NamedPlayer> players) {
+    public static void updateVisitList(List<VisitShelterEntry> players) {
         visitList = List.copyOf(players);
     }
 
-    public static List<NamedPlayer> visitList() {
+    public static List<VisitShelterEntry> visitList() {
         return visitList;
     }
 
