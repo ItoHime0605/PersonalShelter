@@ -312,10 +312,10 @@
   "personaldimension.message.visit_denied": "你沒有進入此維度的權限",
   "personaldimension.message.visit_unavailable": "此維度目前不可用",
   "personaldimension.message.visiting": "正在前往 %s 的個人維度",
-  "item.personaldimension.shelter_permit_lv1": "§f一級土地擴充許可證",
-  "item.personaldimension.shelter_permit_lv2": "§a二級土地擴充許可證",
-  "item.personaldimension.shelter_permit_lv3": "§b三級土地擴充許可證",
-  "item.personaldimension.shelter_permit_lv4": "§e四級土地擴充許可證",
+  "item.personaldimension.shelter_permit_lv1": "§f§l一級土地擴充許可證",
+  "item.personaldimension.shelter_permit_lv2": "§a§l二級土地擴充許可證",
+  "item.personaldimension.shelter_permit_lv3": "§b§l三級土地擴充許可證",
+  "item.personaldimension.shelter_permit_lv4": "§e§l四級土地擴充許可證",
   "gui.personaldimension.controller.settings.shelter_upgrade": "土地擴張",
   "gui.personaldimension.controller.settings.theme": "介面顏色"
 }
