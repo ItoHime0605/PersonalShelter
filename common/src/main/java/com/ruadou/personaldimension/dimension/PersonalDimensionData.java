@@ -59,6 +59,8 @@ public class PersonalDimensionData extends SavedData {
     // Personal Shelter: 每個維度各自保存土地等級與預設進入點。
     private static final String TAG_SHELTER_LEVEL = "ShelterLevel";
     private static final String TAG_SHELTER_ENTRY = "ShelterEntry";
+    private static final String TAG_SHELTER_NAME = "ShelterName";
+    private String shelterName = "";
     private int shelterLevel = 0;
     private net.minecraft.core.BlockPos shelterEntry;
 
@@ -83,6 +85,7 @@ public class PersonalDimensionData extends SavedData {
         data.moonPhaseCycle = !tag.contains(TAG_MOON_PHASE_CYCLE) || tag.getBoolean(TAG_MOON_PHASE_CYCLE);
         data.followOverworldMoonPhase = tag.getBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE);
         data.shelterLevel = Math.max(0, Math.min(4, tag.getInt(TAG_SHELTER_LEVEL)));
+        data.shelterName = tag.getString(TAG_SHELTER_NAME);
         if (tag.contains(TAG_SHELTER_ENTRY, 10)) {
             CompoundTag entry = tag.getCompound(TAG_SHELTER_ENTRY);
             data.shelterEntry = new net.minecraft.core.BlockPos(entry.getInt("X"), entry.getInt("Y"), entry.getInt("Z"));
@@ -106,6 +109,7 @@ public class PersonalDimensionData extends SavedData {
         tag.putBoolean(TAG_MOON_PHASE_CYCLE, this.moonPhaseCycle);
         tag.putBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE, this.followOverworldMoonPhase);
         tag.putInt(TAG_SHELTER_LEVEL, shelterLevel);
+        tag.putString(TAG_SHELTER_NAME, shelterName);
         if (shelterEntry != null) {
             CompoundTag entry = new CompoundTag();
             entry.putInt("X", shelterEntry.getX());
@@ -114,6 +118,15 @@ public class PersonalDimensionData extends SavedData {
             tag.put(TAG_SHELTER_ENTRY, entry);
         }
         return tag;
+    }
+
+    public String getShelterName() { return shelterName; }
+
+    public void setShelterName(String name) {
+        if (name == null) throw new IllegalArgumentException("name");
+        String clean = name.strip().replaceAll("[\\p{Cntrl}\\u00A7]", "");
+        if (clean.codePointCount(0, clean.length()) > 16) throw new IllegalArgumentException("Name too long");
+        if (!shelterName.equals(clean)) { shelterName = clean; setDirty(); }
     }
 
     public int getShelterLevel() { return shelterLevel; }
