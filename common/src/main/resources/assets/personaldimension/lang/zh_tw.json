@@ -317,5 +317,6 @@
   "item.personaldimension.shelter_permit_lv3": "§b§l三級土地擴張許可證",
   "item.personaldimension.shelter_permit_lv4": "§e§l四級土地擴張許可證",
   "gui.personaldimension.controller.settings.shelter_upgrade": "土地擴張",
-  "gui.personaldimension.controller.settings.theme": "介面選擇"
+  "gui.personaldimension.controller.settings.theme": "介面選擇",
+  "block.personaldimension.shelter_management_terminal": "私人土地管理終端"
 }
