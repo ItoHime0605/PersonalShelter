@@ -1,7 +1,7 @@
 package com.ruadou.personaldimension.client.gui;
 
 import com.ruadou.personaldimension.client.ClientFriendData;
-import com.ruadou.personaldimension.friend.NamedPlayer;
+import com.ruadou.personaldimension.friend.VisitShelterEntry;
 import com.ruadou.personaldimension.network.RequestVisitListPacket;
 import com.ruadou.personaldimension.network.RequestVisitPacket;
 import com.ruadou.personaldimension.platform.Platform;
@@ -23,10 +23,10 @@ import net.minecraft.network.chat.Component;
 public class VisitScreen extends FriendBaseScreen {
 
     private static final int VISIBLE_ROWS = 7;
-    private static final int ROW_H = 22;
-    private static final int ENTER_BTN_W = 72;
+    private static final int ROW_H = 26;
+    private static final int ENTER_BTN_W = 52;
 
-    private List<NamedPlayer> lastList;
+    private List<VisitShelterEntry> lastList;
     private int scrollOffset;
     private boolean draggingBar;
 
@@ -41,7 +41,7 @@ public class VisitScreen extends FriendBaseScreen {
 
     @Override
     protected void buildWidgets() {
-        List<NamedPlayer> owners = ClientFriendData.visitList();
+        List<VisitShelterEntry> owners = ClientFriendData.visitList();
         this.lastList = owners;
 
         int maxOffset = Math.max(0, owners.size() - VISIBLE_ROWS);
@@ -50,7 +50,7 @@ public class VisitScreen extends FriendBaseScreen {
         int listTop = listTop();
         int btnX = enterButtonX();
         for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < owners.size(); i++) {
-            NamedPlayer owner = owners.get(this.scrollOffset + i);
+            VisitShelterEntry owner = owners.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
             this.addRenderableWidget(new FlatButton(
                 Component.translatable("gui.personaldimension.visit.enter"),
@@ -63,7 +63,7 @@ public class VisitScreen extends FriendBaseScreen {
     }
 
     /** 请求前往目标维度并关闭界面，便于玩家看到传送结果。 */
-    private void visit(NamedPlayer owner) {
+    private void visit(VisitShelterEntry owner) {
         Platform.sendToServer(new RequestVisitPacket(owner.id()));
         onClose();
     }
@@ -77,7 +77,7 @@ public class VisitScreen extends FriendBaseScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        List<NamedPlayer> owners = ClientFriendData.visitList();
+        List<VisitShelterEntry> owners = ClientFriendData.visitList();
         int listTop = listTop();
 
         if (owners.isEmpty()) {
@@ -86,13 +86,15 @@ public class VisitScreen extends FriendBaseScreen {
                 contentLeft(), listTop + 4, ModernStyle.TEXT_SUB, false);
         }
         for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < owners.size(); i++) {
-            NamedPlayer owner = owners.get(this.scrollOffset + i);
+            VisitShelterEntry owner = owners.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
             FriendIcons.drawArrow(graphics, contentLeft(), rowY + 6, ModernStyle.SUCCESS);
             int nameX = contentLeft() + 12;
             int nameW = enterButtonX() - nameX - 4;
-            graphics.drawString(this.font, GuiText.ellipsize(this.font, owner.name(), nameW),
-                nameX, rowY + 6, ModernStyle.TEXT, false);
+            graphics.drawString(this.font, GuiText.ellipsize(this.font, owner.ownerName(), nameW),
+                nameX, rowY + 2, ModernStyle.TEXT, false);
+            graphics.drawString(this.font, GuiText.ellipsize(this.font, owner.shelterName(), nameW),
+                nameX, rowY + 13, ModernStyle.TEXT_SUB, false);
         }
         if (owners.size() > VISIBLE_ROWS) {
             graphics.drawString(this.font,
