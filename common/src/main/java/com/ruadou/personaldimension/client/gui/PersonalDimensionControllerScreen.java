@@ -197,7 +197,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         int btnWidth = 146;
         int halfWidth = 69;
         if (ownDimensionExists()) {
-            int renameY = contentTop() + PADDING + 16;
+            int renameY = contentTop() + PADDING + 100;
             int nameX = contentLeft();
             int available = contentWidth();
             if (renaming) {
