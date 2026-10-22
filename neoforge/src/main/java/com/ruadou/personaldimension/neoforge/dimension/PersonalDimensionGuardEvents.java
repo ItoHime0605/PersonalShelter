@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +110,30 @@ public final class PersonalDimensionGuardEvents {
                 snapshot -> outsideShelter(event.getLevel(), snapshot.getPos()))) {
             event.setCanceled(true);
         }
+    }
+
+    /**
+     * Server-authoritative movement guard. Dynamic dimensions can share vanilla world-border
+     * state, so a per-player movement check is needed in addition to the visual border.
+     * Creative flight and visitors are restricted exactly like survival movement.
+     */
+    @SubscribeEvent
+    public static void onShelterPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(player.level() instanceof ServerLevel level)) return;
+        if (ModDimensions.ownerOf(level.dimension()).isEmpty()) return;
+
+        PersonalDimensionData data = level.getDataStorage().computeIfAbsent(
+            PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+        int shelterLevel = data.getShelterLevel();
+        double x = player.getX();
+        double z = player.getZ();
+        if (ShelterBoundary.containsPosition(shelterLevel, x, z)) return;
+
+        double safeX = ShelterBoundary.clampCoordinate(shelterLevel, x);
+        double safeZ = ShelterBoundary.clampCoordinate(shelterLevel, z);
+        player.connection.teleport(safeX, player.getY(), safeZ, player.getYRot(), player.getXRot());
+        player.setDeltaMovement(0.0D, player.getDeltaMovement().y, 0.0D);
     }
 
     /**
