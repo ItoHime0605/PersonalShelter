@@ -22,8 +22,8 @@ import net.minecraft.network.chat.Component;
  */
 public abstract class PanelScreen extends Screen {
 
-    protected static final int PANEL_WIDTH = 300;
-    protected static final int PANEL_HEIGHT = 220;
+    protected static final int PANEL_WIDTH = 260;
+    protected static final int PANEL_HEIGHT = 250;
     protected static final int HEADER_HEIGHT = 18;
     protected static final int PADDING = 8;
 
