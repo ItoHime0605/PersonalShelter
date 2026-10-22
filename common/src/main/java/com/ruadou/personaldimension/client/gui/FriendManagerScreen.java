@@ -38,6 +38,7 @@ public class FriendManagerScreen extends FriendBaseScreen {
     private boolean draggingBar;
     private EditBox uuidInput;
     private boolean uuidInvalid;
+    private UUID expandedGroupFor;
 
     public FriendManagerScreen(Screen parent) {
         super(Component.translatable("gui.personaldimension.friend.title"), parent);
@@ -67,13 +68,35 @@ public class FriendManagerScreen extends FriendBaseScreen {
             FriendView f = friends.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
             this.addRenderableWidget(new FlatButton(groupLabel(f.group()),
-                groupX, rowY + 1, GROUP_BTN_W, 20, b -> cycleGroup(f, groups)));
+                groupX, rowY + 1, GROUP_BTN_W, 20, b -> {
+                    expandedGroupFor = f.id().equals(expandedGroupFor) ? null : f.id();
+                    rebuildWidgets();
+                }));
             this.addRenderableWidget(new FlatButton(
                 Component.translatable("gui.personaldimension.friend.remove"),
                 removeX, rowY + 1, REMOVE_BTN_W, 20,
                 b -> Platform.sendToServer(FriendConfigActionPacket.removeFriend(f.id()))));
         }
 
+        // Overlay dropdown: choose only existing groups, rather than cycling them.
+        if (expandedGroupFor != null) {
+            FriendView selectedFriend = friends.stream().filter(f -> f.id().equals(expandedGroupFor)).findFirst().orElse(null);
+            if (selectedFriend != null) {
+                int selectedIndex = friends.indexOf(selectedFriend) - scrollOffset;
+                int dropdownY = listTop + Math.max(0, selectedIndex) * ROW_H + 21;
+                int n = 0;
+                for (GroupView g : groups) {
+                    final String groupName = g.name();
+                    this.addRenderableWidget(new FlatButton(Component.literal(groupName),
+                        groupX, dropdownY + n * 19, GROUP_BTN_W, 18, b -> {
+                            Platform.sendToServer(FriendConfigActionPacket.assignGroup(selectedFriend.id(), groupName));
+                            expandedGroupFor = null;
+                            rebuildWidgets();
+                        }));
+                    n++;
+                }
+            }
+        }
         // —— 底部：按 UUID 添加 ——
         int inputY = topPos + 110;
         int addW = 96;
