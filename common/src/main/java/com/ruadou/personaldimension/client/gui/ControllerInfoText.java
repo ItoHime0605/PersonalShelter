@@ -33,7 +33,7 @@ public final class ControllerInfoText {
         int cursorY = y;
 
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
-            dimensionValue(mc), Math.max(100, maxWidth - 84));
+            dimensionValue(mc).copy().withStyle(net.minecraft.ChatFormatting.GOLD), Math.max(100, maxWidth - 84));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
             Component.translatable("gui.personaldimension.controller.info.weather").append(": ").append(weatherText(info)));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
