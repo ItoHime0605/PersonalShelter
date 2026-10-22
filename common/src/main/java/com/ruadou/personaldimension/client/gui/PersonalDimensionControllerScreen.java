@@ -3,6 +3,7 @@ package com.ruadou.personaldimension.client.gui;
 import com.ruadou.personaldimension.network.DeletePersonalDimensionPacket;
 import com.ruadou.personaldimension.network.OpenCreateMenuPacket;
 import com.ruadou.personaldimension.network.OpenShelterUpgradePacket;
+import com.ruadou.personaldimension.network.SetShelterEntryLockPacket;
 import com.ruadou.personaldimension.network.PersonalDimensionTravelPacket;
 import com.ruadou.personaldimension.network.PublicDimensionPacket;
 import com.ruadou.personaldimension.network.RequestDimensionInfoPacket;
@@ -386,6 +387,14 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         this.addRenderableWidget(new FlatButton(Component.literal("介面選擇"),
                 x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.THEME)));
+        if (ownDimensionExists()) {
+            this.addRenderableWidget(new FlatButton(Component.literal("進入點鎖定：是"),
+                x, firstY + 5 * (20 + PADDING), 70, 20,
+                b -> Platform.sendToServer(new SetShelterEntryLockPacket(true))));
+            this.addRenderableWidget(new FlatButton(Component.literal("否"),
+                x + 74, firstY + 5 * (20 + PADDING), 72, 20,
+                b -> Platform.sendToServer(new SetShelterEntryLockPacket(false))));
+        }
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(
