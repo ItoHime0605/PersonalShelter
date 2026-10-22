@@ -23,6 +23,10 @@ public class ModCreativeModeTabs {
             .displayItems((parameters, output)->{
                 output.accept(ModItems.PERSONAL_DIMENSION_GENERATOR);
                 output.accept(ModItems.PERSONAL_DIMENSION_CONTROLLER);
+                output.accept(ModItems.SHELTER_PERMIT_LV1);
+                output.accept(ModItems.SHELTER_PERMIT_LV2);
+                output.accept(ModItems.SHELTER_PERMIT_LV3);
+                output.accept(ModItems.SHELTER_PERMIT_LV4);
                 output.accept(ModBlocks.BIOME_COLLECTOR_ITEM);
                 output.accept(ModBlocks.BIOME_MODIFIER_ITEM);
                 output.accept(ModBlocks.WEATHER_INTERFACE_ITEM);
