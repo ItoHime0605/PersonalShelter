@@ -17,7 +17,7 @@ public record SetShelterNamePacket(String name) implements CustomPacketPayload {
         StreamCodec.composite(ByteBufCodecs.STRING_UTF8, SetShelterNamePacket::name, SetShelterNamePacket::new);
     public void handle(ServerPlayer player) {
         var server = player.getServer();
-        if (server == null || name == null || name.codePointCount(0, name.length()) > 16) return;
+        if (server == null || name == null || name.replaceAll("(?i)&[0-9a-fk-or]", "").codePointCount(0, name.replaceAll("(?i)&[0-9a-fk-or]", "").length()) > 16 || name.length() > 64) return;
         var level = server.getLevel(Platform.levelKeyFor(player.getUUID()));
         if (level == null) return;
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
