@@ -59,6 +59,10 @@ public record CreateDimensionPacket(int presetId, Optional<DimensionTemplate> te
         if (!(player.containerMenu instanceof PersonalDimensionCreateMenu menu)) {
             return;
         }
+        if (!menu.getCarried().isEmpty()) {
+            player.sendSystemMessage(Component.literal("請先將游標上的物品放回背包。"));
+            return;
+        }
         MinecraftServer server = player.getServer();
         if (server == null) {
             return;
