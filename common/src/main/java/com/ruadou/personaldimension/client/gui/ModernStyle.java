@@ -18,33 +18,33 @@ public final class ModernStyle {
     /** 全屏遮罩（深黑半透明，令面板"浮"起而不靠黑投影）。 */
     public static final int SCRIM = 0xCC0A0D14;
     /** 主面板底色（0dp 基底，深灰非纯黑）。 */
-    public static final int PANEL_BG = 0xFF181D28;
+    public static int PANEL_BG = 0xFF181D28;
     /** 主面板描边（低对比，仅轻勾勒）。 */
-    public static final int PANEL_BORDER = 0xFF2F394D;
+    public static int PANEL_BORDER = 0xFF2F394D;
     /** 标题栏底色（略亮于面板）。 */
-    public static final int HEADER_BG = 0xFF1E2431;
+    public static int HEADER_BG = 0xFF1E2431;
     /** 次级卡片底色（明显亮于面板，以亮度表达抬升）。 */
-    public static final int CARD_BG = 0xFF232B3A;
+    public static int CARD_BG = 0xFF232B3A;
     /** 次级卡片描边（极淡，几乎融入）。 */
-    public static final int CARD_BORDER = 0xFF2B3444;
+    public static int CARD_BORDER = 0xFF2B3444;
     /** 分隔线。 */
-    public static final int DIVIDER = 0xFF262E3D;
+    public static int DIVIDER = 0xFF262E3D;
 
     // ===== 文本（不使用纯白，避免深色下光晕）=====
     /** 主文字（≈90%）。 */
-    public static final int TEXT = 0xFFE3E7EF;
+    public static int TEXT = 0xFFE3E7EF;
     /** 次要文字（≈60%）。 */
-    public static final int TEXT_SUB = 0xFF98A2B3;
+    public static int TEXT_SUB = 0xFF98A2B3;
     /** 弱化文字（≈40%）。 */
-    public static final int TEXT_WEAK = 0xFF626C7D;
+    public static int TEXT_WEAK = 0xFF626C7D;
 
     // ===== 强调 / 语义（去饱和，深色下不灼眼）=====
     /** 主强调色（去饱和电蓝，全局唯一强调色）。 */
-    public static final int ACCENT = 0xFF58A6DB;
+    public static int ACCENT = 0xFF58A6DB;
     /** 主强调色悬停提亮。 */
-    public static final int ACCENT_HOVER = 0xFF74B7E6;
+    public static int ACCENT_HOVER = 0xFF74B7E6;
     /** 实心强调/危险填充上的近白文字（不用深字，观感更干净）。 */
-    public static final int ACCENT_TEXT = 0xFFF5F8FC;
+    public static int ACCENT_TEXT = 0xFFF5F8FC;
     /** 次强调色（去饱和紫，仅极少量点缀）。 */
     public static final int ACCENT2 = 0xFF9A8CD8;
     /** 危险色（去饱和红）。 */
@@ -60,11 +60,11 @@ public final class ModernStyle {
 
     // ===== 控件 =====
     /** 次级（幽灵）按钮半透明白叠加，随底色自然提亮。 */
-    public static final int GHOST_FILL = 0x12FFFFFF;
+    public static int GHOST_FILL = 0x12FFFFFF;
     /** 次级按钮悬停叠加。 */
-    public static final int GHOST_FILL_HOVER = 0x1FFFFFFF;
+    public static int GHOST_FILL_HOVER = 0x1FFFFFFF;
     /** 中性控件描边。 */
-    public static final int BTN_BORDER = 0xFF3C475B;
+    public static int BTN_BORDER = 0xFF3C475B;
     /** 开关关闭态轨道（中性暗灰凹槽）。 */
     public static final int TRACK_OFF = 0xFF333C4D;
     /** 开关开启态轨道（点亮为灰白偏灰的浅色凹槽，不用彩色，不刺眼；靠明亮滑钮形成对比）。 */
@@ -74,12 +74,67 @@ public final class ModernStyle {
     /** 悬停淡白叠加。 */
     public static final int HOVER_OVERLAY = 0x14FFFFFF;
     /** 深色内凹物品槽底色（比面板更暗，形成凹陷）。 */
-    public static final int SLOT_BG = 0xFF10131A;
+    public static int SLOT_BG = 0xFF10131A;
     /** 深色内凹物品槽深描边。 */
-    public static final int SLOT_BORDER = 0xFF090B10;
+    public static int SLOT_BORDER = 0xFF090B10;
 
     /** 默认圆角半径（逐行圆弧近似）。 */
     public static final int CHAMFER = 4;
+
+
+    // Client-only preferences. Loaded once; theme changes are saved locally.
+    private static int selectedTheme = 0;
+    private static boolean themeLoaded = false;
+
+    public static int themeIndex() {
+        ensureThemeLoaded();
+        return selectedTheme;
+    }
+
+    public static void ensureThemeLoaded() {
+        if (themeLoaded) return;
+        themeLoaded = true;
+        try {
+            java.nio.file.Path path = net.minecraft.client.Minecraft.getInstance()
+                .gameDirectory.toPath().resolve("config/personalshelter-ui-theme.txt");
+            if (java.nio.file.Files.isRegularFile(path)) {
+                int saved = Integer.parseInt(java.nio.file.Files.readString(path).trim());
+                setTheme(saved, false);
+            }
+        } catch (Exception ignored) { setTheme(0, false); }
+    }
+
+    public static void applyTheme(int theme) { setTheme(theme, true); }
+
+    private static void setTheme(int theme, boolean save) {
+        selectedTheme = Math.max(0, Math.min(6, theme));
+        // Background, header, card, border, text, secondary text, accent.
+        int[][] palette = {
+            {0xFF181D28,0xFF1E2431,0xFF232B3A,0xFF2F394D,0xFFE3E7EF,0xFF98A2B3,0xFF58A6DB},
+            {0xFFF0F1F4,0xFFE2E5EA,0xFFFFFFFF,0xFFBFC6D0,0xFF273247,0xFF596778,0xFF447FC0},
+            {0xFF14365C,0xFF194A7B,0xFF21558B,0xFF2F6EAD,0xFFF1F8FF,0xFFB7D8F1,0xFF6EC5FF},
+            {0xFFF4DBE7,0xFFE9C4D7,0xFFFFF1F7,0xFFD49EBB,0xFF55364B,0xFF795A6C,0xFFB9548B},
+            {0xFFDCEACC,0xFFBFD6AA,0xFFEEF7E5,0xFF91B27D,0xFF2B462D,0xFF527052,0xFF559C55},
+            {0xFFD6EFF6,0xFFB8E1ED,0xFFEAF9FD,0xFF86BED0,0xFF244A5B,0xFF47798B,0xFF299FC4},
+            {0xFF090A0C,0xFF121417,0xFF1B1D21,0xFF373B44,0xFFF0F1F3,0xFFA4ABB5,0xFF8AABDD}
+        };
+        int[] c = palette[selectedTheme];
+        PANEL_BG=c[0]; HEADER_BG=c[1]; CARD_BG=c[2]; PANEL_BORDER=c[3];
+        CARD_BORDER=c[3]; BTN_BORDER=c[3]; DIVIDER=c[3];
+        TEXT=c[4]; TEXT_SUB=c[5]; TEXT_WEAK=c[5]; ACCENT=c[6];
+        ACCENT_HOVER=lighten(c[6],0.14f);
+        ACCENT_TEXT=c[4]; GHOST_FILL=withAlpha(c[2],0xBB);
+        GHOST_FILL_HOVER=withAlpha(c[6],0x55);
+        SLOT_BG=darken(c[0],0.08f); SLOT_BORDER=darken(c[3],0.18f);
+        if (save) {
+            try {
+                java.nio.file.Path path = net.minecraft.client.Minecraft.getInstance()
+                    .gameDirectory.toPath().resolve("config/personalshelter-ui-theme.txt");
+                java.nio.file.Files.createDirectories(path.getParent());
+                java.nio.file.Files.writeString(path, Integer.toString(selectedTheme));
+            } catch (Exception ignored) { }
+        }
+    }
 
     // ===== 圆角几何原语 =====
 
