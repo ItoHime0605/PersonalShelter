@@ -93,7 +93,7 @@ public class VisitScreen extends FriendBaseScreen {
             int nameW = enterButtonX() - nameX - 4;
             graphics.drawString(this.font, GuiText.ellipsize(this.font, owner.ownerName(), nameW),
                 nameX, rowY + 2, ModernStyle.TEXT, false);
-            graphics.drawString(this.font, this.font.substrByWidth(ShelterNameFormatting.parse(owner.shelterName()), nameW),
+            graphics.drawString(this.font, ShelterNameFormatting.parse(owner.shelterName()),
                 nameX, rowY + 13, ModernStyle.TEXT_SUB, false);
         }
         if (owners.size() > VISIBLE_ROWS) {
