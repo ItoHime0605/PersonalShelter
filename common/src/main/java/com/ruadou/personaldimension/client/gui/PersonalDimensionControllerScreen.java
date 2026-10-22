@@ -5,6 +5,7 @@ import com.ruadou.personaldimension.network.OpenCreateMenuPacket;
 import com.ruadou.personaldimension.network.OpenShelterUpgradePacket;
 import com.ruadou.personaldimension.network.SetShelterEntryLockPacket;
 import com.ruadou.personaldimension.network.PersonalDimensionTravelPacket;
+import com.ruadou.personaldimension.network.ReturnToOwnShelterPacket;
 import com.ruadou.personaldimension.network.PublicDimensionPacket;
 import com.ruadou.personaldimension.network.RequestDimensionInfoPacket;
 import com.ruadou.personaldimension.network.RequestShelterNamePacket;
@@ -105,7 +106,9 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         // 仅在切换标签时由 selectTab() 置 null 重建。
         this.deleteConfirmButton = null;
 
-        if (this.activeTab == Tab.SETTINGS) {
+        if (isVisitingFriendLand()) {
+            addVisitorButtons();
+        } else if (this.activeTab == Tab.SETTINGS) {
             if (this.settingsPage == SettingsPage.HOME) {
                 addSettingsHome();
             } else if (this.settingsPage == SettingsPage.TIME) {
@@ -138,6 +141,23 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         // 打开即请求一次，避免首帧信息为空
         requestInfo();
         Platform.sendToServer(new RequestShelterNamePacket());
+    }
+
+    private boolean isVisitingFriendLand() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return false;
+        var dimension = mc.player.level().dimension();
+        return Platform.isModDimension(dimension) && !Platform.isPublicDimension(dimension)
+            && !dimension.equals(Platform.levelKeyFor(mc.player.getUUID()));
+    }
+
+    private void addVisitorButtons() {
+        int x = this.leftPos + (PANEL_WIDTH - 174) / 2;
+        int y = contentTop() + 120;
+        this.addRenderableWidget(new FlatButton(Component.literal("退出好友土地"), x, y, 174, 22,
+            b -> { Platform.sendToServer(new PersonalDimensionTravelPacket()); onClose(); }));
+        this.addRenderableWidget(new FlatButton(Component.literal("回到自己私人土地"), x, y + 30, 174, 22,
+            b -> { Platform.sendToServer(new ReturnToOwnShelterPacket()); onClose(); }));
     }
 
     // —— 供同包设置子面板访问 PanelScreen 的 protected 骨架（跨包不可直接访问）——
@@ -515,6 +535,10 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
      */
     @Override
     protected void renderHeader(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (isVisitingFriendLand()) {
+            super.renderHeader(graphics, mouseX, mouseY, partialTick);
+            return;
+        }
         // 标题栏底 + 分隔线（分隔线随后被选中标签盖住形成"融合"）
         ModernStyle.fillRoundTop(graphics, this.leftPos + 1, this.topPos + 1, PANEL_WIDTH - 2,
             HEADER_HEIGHT, ModernStyle.CHAMFER, ModernStyle.HEADER_BG);
@@ -562,6 +586,13 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     /** 信息页正文（正常态显示信息，删除确认态显示警示）。 */
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (isVisitingFriendLand()) {
+            graphics.drawString(this.font, Component.literal("好友私人土地"), contentLeft() + 8,
+                contentTop() + 22, ModernStyle.TEXT, false);
+            graphics.drawString(this.font, Component.literal("訪客模式：無法管理土地設定"), contentLeft() + 8,
+                contentTop() + 44, ModernStyle.TEXT_SUB, false);
+            return;
+        }
         if (this.activeTab == Tab.INFO) {
             if (this.confirmingDelete) {
                 renderDeleteConfirm(graphics, this.leftPos + PADDING, contentTop() + PADDING);
@@ -589,6 +620,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (isVisitingFriendLand()) return super.mouseClicked(mouseX, mouseY, button);
         if (button == 0) {
             Tab clicked = tabAt(mouseX, mouseY);
             if (clicked != null) {
