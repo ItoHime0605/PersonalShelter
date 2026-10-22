@@ -30,7 +30,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
         }
         addDataSlot(levelData);
         addSlot(new Slot(permit, 0, 80, 57) {
-            @Override public boolean mayPlace(ItemStack stack) { return isPermit(stack); }
+            @Override public boolean mayPlace(ItemStack stack) { return levelData.get() < 4 && isPermit(stack); }
             @Override public int getMaxStackSize() { return 1; }
         });
         for (int row = 0; row < 3; row++)
@@ -48,7 +48,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
     public ItemStack permitStack() { return permit.getItem(0); }
 
     @Override public ItemStack quickMoveStack(Player player, int index) {
-        if (index < 0 || index >= slots.size()) return ItemStack.EMPTY;
+        if (index < 0 || index >= slots.size() || (levelData.get() >= 4 && index != 0)) return ItemStack.EMPTY;
         Slot slot = slots.get(index);
         if (!slot.hasItem()) return ItemStack.EMPTY;
         ItemStack stack = slot.getItem();
@@ -65,7 +65,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
 
     /** Vanilla inventory-button packet; the client never supplies an item or target level. */
     @Override public boolean clickMenuButton(Player player, int buttonId) {
-        if (buttonId != 0 || !(player instanceof ServerPlayer actor) || !stillValid(player)) return false;
+        if (buttonId != 0 || levelData.get() >= 4 || !(player instanceof ServerPlayer actor) || !stillValid(player)) return false;
         if (!(actor.level() instanceof ServerLevel shelter)) return false;
         PersonalDimensionData data = shelter.getDataStorage().get(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         if (data == null) {
