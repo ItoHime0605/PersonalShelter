@@ -202,6 +202,11 @@ public class PersonalDimensionCreateScreen extends AbstractContainerScreen<Perso
 
     /** 提交创建：自定义携带画板模板，其余仅传预设 id。成功后由服务端关闭容器并传送。 */
     private void confirm() {
+        if (!this.menu.getCarried().isEmpty()) {
+            if (this.minecraft != null && this.minecraft.player != null)
+                this.minecraft.player.displayClientMessage(Component.literal("請先將游標上的物品放回背包。"), false);
+            return;
+        }
         if (this.selected == DimensionPreset.CUSTOM) {
             Platform.sendToServer(
                 new CreateDimensionPacket(DimensionPreset.CUSTOM.id(), Optional.of(this.canvas.build())));
