@@ -88,6 +88,11 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         super(Component.translatable("gui.personaldimension.controller.title"));
     }
 
+    public void showSettingsHome() {
+        this.activeTab = Tab.SETTINGS;
+        this.settingsPage = SettingsPage.HOME;
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -204,7 +209,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             if (renaming) {
                 shelterNameInput = new EditBox(this.font, nameX, renameY, available - 62, 20,
                     Component.literal("私人土地名稱"));
-                shelterNameInput.setMaxLength(16);
+                shelterNameInput.setMaxLength(48);
                 shelterNameInput.setValue(ClientShelterName.get());
                 shelterNameInput.setHint(Component.literal("輸入名稱"));
                 this.addRenderableWidget(shelterNameInput);
