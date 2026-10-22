@@ -57,7 +57,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     /** 设置页内的二级子页。 */
     private enum SettingsPage {
-        HOME, TIME, WEATHER, MOON_PHASE
+        HOME, TIME, WEATHER, MOON_PHASE, THEME
     }
 
     /** 删除确认的目标：个人维度或公共维度（决定确认文案与下发包）。 */
@@ -108,9 +108,11 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             } else if (this.settingsPage == SettingsPage.WEATHER) {
                 this.activePanel = new WeatherSubPanel(this);
                 this.activePanel.build();
-            } else {
+            } else if (this.settingsPage == SettingsPage.MOON_PHASE) {
                 this.activePanel = new MoonPhaseSubPanel(this);
                 this.activePanel.build();
+            } else {
+                addThemeSelection();
             }
         } else if (this.activeTab == Tab.FRIENDS) {
             // 好友页：好友管理 / 访问维度两个入口
@@ -196,21 +198,21 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         }
         int btnWidth = 146;
         if (ownDimensionExists()) {
-            int renameY = contentTop() + PADDING + 100;
+            int renameY = contentTop() + PADDING;
             int nameX = contentLeft();
             int available = contentWidth();
             if (renaming) {
                 shelterNameInput = new EditBox(this.font, nameX, renameY, available - 62, 20,
-                    Component.literal("個人空間名稱"));
+                    Component.literal("私人土地名稱"));
                 shelterNameInput.setMaxLength(16);
                 shelterNameInput.setValue(ClientShelterName.get());
                 shelterNameInput.setHint(Component.literal("輸入名稱"));
                 this.addRenderableWidget(shelterNameInput);
                 this.addRenderableWidget(new FlatButton(Component.literal("儲存"),
-                    nameX + available - 58, renameY, 58, 20, b -> saveShelterName()));
+                    nameX + available - 58, renameY, 58, 18, b -> saveShelterName()));
             } else {
-                this.addRenderableWidget(new FlatButton(Component.literal("改名"),
-                    nameX + available - 52, renameY, 52, 20, b -> { renaming = true; rebuildWidgets(); }));
+                this.addRenderableWidget(new FlatButton(Component.literal("土地改名"),
+                    nameX + available - 78, renameY, 78, 18, b -> { renaming = true; rebuildWidgets(); }));
             }
         }
         int gap = 8;
@@ -221,7 +223,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             // 已创建：提供"删除维度"入口（点击进入长按确认）
             this.addRenderableWidget(new FlatButton(
                     Component.translatable("gui.personaldimension.controller.delete.button"),
-                    this.leftPos + PANEL_WIDTH - PADDING - 70, travelY - 28, 62, 18, b -> beginDelete()));
+                    this.leftPos + PANEL_WIDTH - PADDING - 78, contentTop() + PADDING + 22, 78, 18, b -> beginDelete()));
         } else {
             // 未创建：提供"创建维度"入口
             this.addRenderableWidget(new FlatButton(
@@ -376,12 +378,35 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 Component.translatable("gui.personaldimension.controller.settings.moon_phase_entry"),
                 x, firstY + 2 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.MOON_PHASE)));
+        this.addRenderableWidget(new FlatButton(Component.literal("介面顏色"),
+                x, firstY + 4 * (20 + PADDING), btnWidth, 20,
+                b -> openSettingsPage(SettingsPage.THEME)));
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(
                     Component.translatable("gui.personaldimension.controller.settings.shelter_upgrade"),
                     x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
+        }
+    }
+
+    /** Local, persistent color theme chooser. */
+    private void addThemeSelection() {
+        int x = contentLeft() + 10;
+        int y = contentTop() + PADDING + 18;
+        String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色"};
+        this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
+            x, contentTop() + PADDING, 78, 16, b -> backToSettingsHome()));
+        for (int i = 0; i < names.length; i++) {
+            final int choice = i;
+            int row = i / 2, col = i % 2;
+            FlatButton button = new FlatButton(Component.literal(names[i]),
+                x + col * 110, y + row * 27, 102, 21, b -> {
+                    ModernStyle.applyTheme(choice);
+                    rebuildWidgets();
+                });
+            button.setSelected(ModernStyle.themeIndex() == i);
+            this.addRenderableWidget(button);
         }
     }
 
