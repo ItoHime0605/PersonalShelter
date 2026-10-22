@@ -797,6 +797,8 @@ public final class PersonalDimensionService {
                 level.setBlockAndUpdate(new BlockPos(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
             }
         }
+        level.getWorldBorder().setCenter(0.0D, 0.0D);
+        level.getWorldBorder().setSize(2.0D * half);
         return new BlockPos(0, 0, 0);
     }
 
