@@ -6,6 +6,7 @@ import com.ruadou.personaldimension.block.FriendVisitorTeleporterBlock;
 import com.ruadou.personaldimension.block.LightningInterfaceBlock;
 import com.ruadou.personaldimension.block.MoonPhaseInterfaceBlock;
 import com.ruadou.personaldimension.block.TeleporterBlock;
+import com.ruadou.personaldimension.block.ShelterManagementTerminalBlock;
 import com.ruadou.personaldimension.block.TimeInterfaceBlock;
 import com.ruadou.personaldimension.block.WeatherInterfaceBlock;
 import com.ruadou.personaldimension.neoforge.PersonalDimension;
@@ -95,6 +96,13 @@ public class ModBlocks {
                 .mapColor(MapColor.COLOR_PINK)
                 .strength(3.0F)
                 .sound(SoundType.METAL)));
+
+    public static final DeferredBlock<Block> SHELTER_MANAGEMENT_TERMINAL =
+        BLOCKS.register("shelter_management_terminal", () -> new ShelterManagementTerminalBlock(
+            BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F).sound(SoundType.METAL).noOcclusion()));
+
+    public static final DeferredItem<BlockItem> SHELTER_MANAGEMENT_TERMINAL_ITEM =
+        ModItems.ITEMS.registerSimpleBlockItem("shelter_management_terminal", SHELTER_MANAGEMENT_TERMINAL);
 
     // BlockItem 挂到物品注册器：随 ModItems 一并注册，无需单独 register 调用
     public static final DeferredItem<BlockItem> BIOME_COLLECTOR_ITEM =
