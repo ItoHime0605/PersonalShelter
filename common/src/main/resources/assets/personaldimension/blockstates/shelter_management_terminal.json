@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "personaldimension:block/shelter_management_terminal"
+    },
+    "facing=east": {
+      "model": "personaldimension:block/shelter_management_terminal",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "personaldimension:block/shelter_management_terminal",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "personaldimension:block/shelter_management_terminal",
+      "y": 270
+    }
+  }
+}
