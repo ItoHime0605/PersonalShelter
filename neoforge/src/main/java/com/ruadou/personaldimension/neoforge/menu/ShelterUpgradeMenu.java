@@ -30,6 +30,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
         }
         addDataSlot(levelData);
         addSlot(new Slot(permit, 0, 80, 57) {
+            @Override public boolean isActive() { return levelData.get() < 4; }
             @Override public boolean mayPlace(ItemStack stack) { return levelData.get() < 4 && isPermit(stack); }
             @Override public int getMaxStackSize() { return 1; }
         });
@@ -82,7 +83,7 @@ public final class ShelterUpgradeMenu extends AbstractContainerMenu {
         }
         actor.sendSystemMessage(Component.literal(switch (result) {
             case NOT_OWNER -> "只有空間擁有者可以擴張土地。";
-            case EMPTY_STACK -> "請先放入擴充許可證。";
+            case EMPTY_STACK -> "請先放入擴張許可證。";
             case INVALID_PERMIT -> "這不是有效的擴充許可證。";
             case WRONG_LEVEL -> "許可證等級不符，必須依序擴張。";
             case OCCUPIED -> "新增土地範圍已有方塊，無法安全擴張。";
