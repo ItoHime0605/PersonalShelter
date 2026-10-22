@@ -1,6 +1,9 @@
 package com.ruadou.personaldimension.neoforge.dimension;
 
 import java.util.Optional;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import com.ruadou.personaldimension.shelter.ShelterUpgradeRules;
 import java.util.UUID;
 
 import com.ruadou.personaldimension.dimension.FriendVisitorTeleporterService;
@@ -37,6 +40,8 @@ import org.slf4j.LoggerFactory;
 public final class PersonalDimensionGuardEvents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("Personaldimension");
+
+    private static final Map<UUID, String> LAST_DIMENSION = new ConcurrentHashMap<>();
 
     private PersonalDimensionGuardEvents() {}
 
@@ -121,7 +126,28 @@ public final class PersonalDimensionGuardEvents {
     public static void onShelterPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
-        if (ModDimensions.ownerOf(level.dimension()).isEmpty()) return;
+        if (ModDimensions.ownerOf(level.dimension()).isEmpty()) {
+            LAST_DIMENSION.remove(player.getUUID());
+            return;
+        }
+
+        // Test mode: execute vanilla /worldborder commands exactly once per dimension entry.
+        // Commands run as a level-4 server command source at the player's current dimension.
+        // Vanilla may still share the border across dimensions; this experiment does not
+        // guarantee a per-dimension border and must be tested in a disposable world.
+        String dimensionKey = level.dimension().location().toString();
+        if (!dimensionKey.equals(LAST_DIMENSION.get(player.getUUID()))) {
+            LAST_DIMENSION.put(player.getUUID(), dimensionKey);
+            PersonalDimensionData entryData = level.getDataStorage().computeIfAbsent(
+                PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+            int borderSize = ShelterUpgradeRules.size(entryData.getShelterLevel());
+            var source = player.createCommandSourceStack().withPermission(4).withSuppressedOutput();
+            var commands = player.getServer().getCommands();
+            commands.performPrefixedCommand(source, "worldborder center 0.5 0.5");
+            commands.performPrefixedCommand(source, "worldborder set " + borderSize);
+            LOGGER.info("[Personal Shelter] Applied /worldborder on entry: player={}, dimension={}, size={}",
+                player.getGameProfile().getName(), dimensionKey, borderSize);
+        }
 
         PersonalDimensionData data = level.getDataStorage().computeIfAbsent(
             PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
