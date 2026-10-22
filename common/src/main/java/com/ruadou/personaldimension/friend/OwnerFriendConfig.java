@@ -55,7 +55,7 @@ public final class OwnerFriendConfig {
     public static OwnerFriendConfig createDefault(EnumSet<Permission> defaultPerms) {
         OwnerFriendConfig config = new OwnerFriendConfig();
         config.groups.put(DEFAULT_GROUP_NAME,
-            new PermissionGroup(DEFAULT_GROUP_NAME, EnumSet.noneOf(Permission.class)));
+            new PermissionGroup(DEFAULT_GROUP_NAME, EnumSet.of(Permission.ENTER)));
         config.defaultGroupName = DEFAULT_GROUP_NAME;
         return config;
     }
@@ -77,7 +77,9 @@ public final class OwnerFriendConfig {
     /** 给好友分配组名；空串表示"未分配"（回落到默认组）。 */
     public void assignGroup(UUID friend, String groupName) {
         if (this.friends.containsKey(friend)) {
-            this.friends.put(friend, groupName == null ? "" : groupName);
+            if (groupName != null && this.groups.containsKey(groupName)) {
+                this.friends.put(friend, groupName);
+            }
         }
     }
 
@@ -151,7 +153,7 @@ public final class OwnerFriendConfig {
         }
         for (Map.Entry<UUID, String> e : this.friends.entrySet()) {
             if (name.equals(e.getValue())) {
-                e.setValue("");
+                e.setValue(DEFAULT_GROUP_NAME);
             }
         }
         return true;
@@ -187,7 +189,10 @@ public final class OwnerFriendConfig {
         if (group == null && this.defaultGroupName != null) {
             group = this.groups.get(this.defaultGroupName);
         }
-        return group != null ? group.permissions() : EnumSet.noneOf(Permission.class);
+        if (!this.friends.containsKey(actor)) return EnumSet.noneOf(Permission.class);
+        if (group == null) return EnumSet.noneOf(Permission.class);
+        if (DEFAULT_GROUP_NAME.equals(group.getName())) return EnumSet.of(Permission.ENTER);
+        return group.permissions();
     }
 
     // ——— 持久化 ———
@@ -230,6 +235,8 @@ public final class OwnerFriendConfig {
         if (tag.contains(TAG_DEFAULT_GROUP)) {
             config.defaultGroupName = tag.getString(TAG_DEFAULT_GROUP);
         }
+        config.groups.put(DEFAULT_GROUP_NAME, new PermissionGroup(DEFAULT_GROUP_NAME, EnumSet.of(Permission.ENTER)));
+        config.defaultGroupName = DEFAULT_GROUP_NAME;
         return config;
     }
 }
