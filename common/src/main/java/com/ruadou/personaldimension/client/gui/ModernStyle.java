@@ -274,6 +274,29 @@ public final class ModernStyle {
         fillRound(g, x - 1, y + 2, w + 2, h, CHAMFER + 2, 0x2E000000); // 单层极淡投影，仅作分离
         roundedRect(g, x, y, w, h, CHAMFER + 1, PANEL_BG, PANEL_BORDER);
         fillRound(g, x + 3, y + 1, w - 6, 1, 0, 0x12FFFFFF);           // 顶部 1px 内高光（抬升感）
+        if (selectedTheme == 7) {
+            g.fill(x + 4, y + 3, x + w - 4, y + 5, 0xFF30343A);
+            g.fill(x + 4, y + h - 6, x + w - 4, y + h - 4, 0xFF24282D);
+            for (int yy = y + 12; yy < y + h - 10; yy += 18) {
+                g.fill(x + 2, yy, x + 4, yy + 3, 0xFF8E969E);
+                g.fill(x + w - 4, yy, x + w - 2, yy + 3, 0xFF8E969E);
+            }
+        } else if (selectedTheme == 8) {
+            g.fill(x + 4, y + 4, x + w - 4, y + 5, 0xFF6AB96A);
+            g.fill(x + 4, y + h - 5, x + w - 4, y + h - 4, 0xFF6AB96A);
+            g.fill(x + 4, y + 4, x + 5, y + h - 4, 0xFF6AB96A);
+            g.fill(x + w - 5, y + 4, x + w - 4, y + h - 4, 0xFF6AB96A);
+            for (int yy = y + 24; yy < y + h - 8; yy += 4)
+                g.fill(x + 6, yy, x + w - 6, yy + 1, 0x0A80FF80);
+        } else if (selectedTheme == 9) {
+            for (int i = 0; i < 13; i++) {
+                g.fill(x + 4 + i, y + 4, x + 5 + i, y + 5, 0xFFD97BF5);
+                g.fill(x + w - 5 - i, y + 4, x + w - 4 - i, y + 5, 0xFFD97BF5);
+                g.fill(x + 4 + i, y + h - 5, x + 5 + i, y + h - 4, 0xFFD97BF5);
+            }
+            g.fill(x + 3, y + 20, x + 5, y + h - 20, 0xFF9055B6);
+            g.fill(x + w - 5, y + 20, x + w - 3, y + h - 20, 0xFF9055B6);
+        }
     }
 
     /** 次级卡片：更亮底色（以亮度表达抬升）+ 极淡描边 + 顶部极淡内高光。 */
