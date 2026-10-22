@@ -107,7 +107,7 @@ public final class ModernStyle {
     public static void applyTheme(int theme) { setTheme(theme, true); }
 
     private static void setTheme(int theme, boolean save) {
-        selectedTheme = Math.max(0, Math.min(6, theme));
+        selectedTheme = Math.max(0, Math.min(7, theme));
         // Background, header, card, border, text, secondary text, accent.
         int[][] palette = {
             {0xFF181D28,0xFF1E2431,0xFF232B3A,0xFF2F394D,0xFFE3E7EF,0xFF98A2B3,0xFF58A6DB},
@@ -116,7 +116,8 @@ public final class ModernStyle {
             {0xFFF4DBE7,0xFFE9C4D7,0xFFFFF1F7,0xFFD49EBB,0xFF55364B,0xFF795A6C,0xFFB9548B},
             {0xFFDCEACC,0xFFBFD6AA,0xFFEEF7E5,0xFF91B27D,0xFF2B462D,0xFF527052,0xFF559C55},
             {0xFFD6EFF6,0xFFB8E1ED,0xFFEAF9FD,0xFF86BED0,0xFF244A5B,0xFF47798B,0xFF299FC4},
-            {0xFF090A0C,0xFF121417,0xFF1B1D21,0xFF373B44,0xFFF0F1F3,0xFFA4ABB5,0xFF8AABDD}
+            {0xFF090A0C,0xFF121417,0xFF1B1D21,0xFF373B44,0xFFF0F1F3,0xFFA4ABB5,0xFF8AABDD},
+            {0xFF30291F,0xFF413525,0xFF4B3D2B,0xFF796246,0xFFE6D1A2,0xFFB9AD92,0xFFC79A52}
         };
         int[] c = palette[selectedTheme];
         PANEL_BG=c[0]; HEADER_BG=c[1]; CARD_BG=c[2]; PANEL_BORDER=c[3];
