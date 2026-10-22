@@ -33,7 +33,7 @@ public final class ControllerInfoText {
         int cursorY = y;
 
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
-            dimensionValue(mc).copy().withStyle(net.minecraft.ChatFormatting.GOLD), Math.max(100, maxWidth - 84));
+            dimensionValue(mc), Math.max(100, maxWidth - 84));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
             Component.translatable("gui.personaldimension.controller.info.weather").append(": ").append(weatherText(info)));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
@@ -70,7 +70,7 @@ public final class ControllerInfoText {
         ResourceKey<Level> personalKey = Platform.levelKeyFor(mc.player.getUUID());
         boolean created = mc.player.connection.levels().contains(personalKey);
         return created
-            ? Component.literal(ClientShelterName.get().isBlank() ? mc.player.getGameProfile().getName() + "的私人土地" : ClientShelterName.get())
+            ? com.ruadou.personaldimension.client.gui.ShelterNameFormatting.parse(ClientShelterName.get().isBlank() ? mc.player.getGameProfile().getName() + "的私人土地" : ClientShelterName.get())
             : Component.translatable("gui.personaldimension.controller.info.dimension_uncreated");
     }
 
