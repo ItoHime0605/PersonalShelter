@@ -2,7 +2,7 @@ package com.ruadou.personaldimension.shelter;
 
 /** Server-authoritative level rules; levels must never be skipped. */
 public final class ShelterUpgradeRules {
-    private static final int[] SIZES = {64, 96, 128, 192, 256};
+    private static final int[] SIZES = {48, 80, 112, 144, 176};
     private ShelterUpgradeRules() {}
     public static int size(int level) {
         if (level < 0 || level >= SIZES.length) throw new IllegalArgumentException("level");
