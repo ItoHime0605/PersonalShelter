@@ -378,7 +378,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 Component.translatable("gui.personaldimension.controller.settings.moon_phase_entry"),
                 x, firstY + 2 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.MOON_PHASE)));
-        this.addRenderableWidget(new FlatButton(Component.literal("介面顏色"),
+        this.addRenderableWidget(new FlatButton(Component.literal("介面選擇"),
                 x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.THEME)));
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
@@ -393,10 +393,15 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     /** Local, persistent color theme chooser. */
     private void addThemeSelection() {
         int x = contentLeft() + 10;
-        int y = contentTop() + PADDING + 18;
-        String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色", "廢土風格"};
+        int y = contentTop() + PADDING + 38;
+        String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色", "廢土風格", "異塵餘生風格", "魔法空間風格"};
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
             x, contentTop() + PADDING, 78, 16, b -> backToSettingsHome()));
+        this.addRenderableWidget(new FlatButton(Component.literal("字體放大：" + (ModernStyle.largeText() ? "開" : "關")),
+            x + 110, contentTop() + PADDING, 102, 16, b -> {
+                ModernStyle.setLargeText(!ModernStyle.largeText());
+                rebuildWidgets();
+            }));
         for (int i = 0; i < names.length; i++) {
             final int choice = i;
             int row = i / 2, col = i % 2;
