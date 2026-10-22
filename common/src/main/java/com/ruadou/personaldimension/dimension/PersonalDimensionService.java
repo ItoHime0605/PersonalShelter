@@ -797,8 +797,6 @@ public final class PersonalDimensionService {
                 level.setBlockAndUpdate(new BlockPos(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
             }
         }
-        level.getWorldBorder().setCenter(0.5D, 0.5D);
-        level.getWorldBorder().setSize(com.ruadou.personaldimension.shelter.ShelterUpgradeRules.size(0));
         return new BlockPos(0, 0, 0);
     }
 
