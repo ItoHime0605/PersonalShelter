@@ -125,7 +125,8 @@ public class PersonalDimensionData extends SavedData {
     public void setShelterName(String name) {
         if (name == null) throw new IllegalArgumentException("name");
         String clean = name.strip().replaceAll("[\\p{Cntrl}\\u00A7]", "");
-        if (clean.codePointCount(0, clean.length()) > 16) throw new IllegalArgumentException("Name too long");
+        String visible = clean.replaceAll("(?i)&[0-9a-fk-or]", "");
+        if (visible.codePointCount(0, visible.length()) > 16 || clean.length() > 64) throw new IllegalArgumentException("Name too long");
         if (!shelterName.equals(clean)) { shelterName = clean; setDirty(); }
     }
 
