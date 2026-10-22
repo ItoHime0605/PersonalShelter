@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "com.ruadou.personaldimension.neoforge.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LevelMixin",
+    "ServerGamePacketListenerMixin",
+    "ContainerMenuClickMixin"
+  ],
+  "client": [
+    "client.ClientMoonPhaseMixin",
+    "client.ContainerMenuClickClientMixin",
+    "AbstractContainerScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

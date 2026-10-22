@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PGP",
+    "GTG",
+    "PGP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:ender_pearl"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "T": {
+      "item": "personaldimension:teleporter"
+    }
+  },
+  "result": {
+    "id": "personaldimension:friend_visitor_teleporter"
+  }
+}

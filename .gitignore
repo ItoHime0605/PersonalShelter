@@ -1,0 +1,74 @@
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/**/out/
+.run/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.eclipse/
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/**/bin/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+### Windows ###
+Thumbs.db
+Desktop.ini
+
+### Minecraft Modding ###
+run/
+!**/src/**/run/
+**/src/generated/**/.cache/
+repo/
+!**/src/**/repo/
+
+### Java ###
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+### Logs ###
+logs/
+*.log
+*.log.gz
+
+### Temporary files ###
+*.tmp
+*.bak
+*.swp
+*~
+
+### Build artifacts ###
+*.zip
+*.tar.gz
+*.jar
+
+### OS generated files ###
+*.DS_Store
+ehthumbs.db
+Thumbs.db
+
+### NeoForge specific ###
+neoforge/run/
+fabric/run/
+/.vs

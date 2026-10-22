@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "personaldimension:block/weather_interface" }
+  }
+}

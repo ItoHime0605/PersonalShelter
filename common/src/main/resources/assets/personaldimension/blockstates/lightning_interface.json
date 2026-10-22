@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "personaldimension:block/lightning_interface" }
+  }
+}

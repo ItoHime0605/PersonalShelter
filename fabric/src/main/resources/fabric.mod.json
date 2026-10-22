@@ -1,0 +1,33 @@
+{
+    "schemaVersion": 1,
+    "id": "personaldimension",
+    "version": "${version}",
+    "name": "Personal Dimension",
+    "description": "为每位玩家创建独立的个人维度，支持自定义地形、时间天气控制、好友访问等。",
+    "authors": [
+        "ruadou"
+    ],
+    "contact": {
+    },
+    "license": "MIT",
+    "icon": "personaldimension.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "com.ruadou.personaldimension.fabric.PersonalDimension"
+        ],
+        "client": [
+            "com.ruadou.personaldimension.fabric.PersonalDimensionClient"
+        ]
+    },
+    "mixins": [
+        "personaldimension.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "~1.21",
+        "java": ">=21",
+        "fabric-api": "*",
+        "architectury": "*"
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DCD",
+    "CBC",
+    "DCD"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "C": {
+      "item": "personaldimension:biome_collector"
+    },
+    "B": {
+      "item": "minecraft:nether_star"
+    }
+  },
+  "result": {
+    "id": "personaldimension:biome_modifier"
+  }
+}

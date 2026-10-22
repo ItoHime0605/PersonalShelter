@@ -1,0 +1,41 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+logoFile = "personaldimension.png"
+logoBlur = false
+
+[[mods]]
+modId = "personaldimension"
+version = "${version}"
+displayName = "Personal Dimension"
+authors = "RUA_DOU"
+description = '''
+Create configurable personal dimensions. Use a controller to adjust time, weather and mob spawning. Support public dimensions and player access permissions.
+'''
+
+[[dependencies.personaldimension]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.personaldimension]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.personaldimension]]
+modId = "architectury"
+type = "required"
+versionRange = "[13.0.8,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "personaldimension.mixins.json"
+
+[[accessTransformers]]
+file = "META-INF/accesstransformer.cfg"

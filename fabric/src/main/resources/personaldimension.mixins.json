@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.ruadou.personaldimension.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MinecraftServerAccessor",
+    "LevelAccessor",
+    "LevelMixin",
+    "MappedRegistryAccessor",
+    "ServerLevelAccessor",
+    "ServerPlayerChangeDimensionMixin",
+    "ServerGamePacketListenerMixin",
+    "ContainerMenuClickMixin"
+  ],
+  "client": [
+    "AbstractContainerScreenMixin",
+    "client.ContainerMenuClickClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

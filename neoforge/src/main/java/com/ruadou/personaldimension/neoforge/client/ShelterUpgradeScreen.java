@@ -1,0 +1,51 @@
+package com.ruadou.personaldimension.neoforge.client;
+
+import com.ruadou.personaldimension.neoforge.menu.ShelterUpgradeMenu;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+
+/** Single centered permit slot; server validates and executes every upgrade. */
+public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterUpgradeMenu> {
+    public ShelterUpgradeScreen(ShelterUpgradeMenu menu, Inventory inventory, Component title) {
+        super(menu, inventory, title);
+        imageWidth = 176;
+        imageHeight = 194;
+        inventoryLabelY = 100;
+        titleLabelX = 8;
+        titleLabelY = 8;
+    }
+
+    @Override protected void init() {
+        super.init();
+        Button confirm = Button.builder(Component.literal("使用許可證擴張"), b -> {
+            if (Minecraft.getInstance().gameMode != null)
+                Minecraft.getInstance().gameMode.handleInventoryButtonClick(menu.containerId, 0);
+        })
+            .bounds(leftPos + 25, topPos + 80, 126, 18).build();
+        addRenderableWidget(confirm);
+    }
+
+    @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        graphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xFF20252F);
+        graphics.fill(leftPos + 6, topPos + 6, leftPos + 170, topPos + 190, 0xFF303744);
+        graphics.fill(leftPos + 79, topPos + 56, leftPos + 97, topPos + 74, 0xFF111820);
+        graphics.fill(leftPos + 7, topPos + 111, leftPos + 169, topPos + 188, 0xFF252B35);
+        for (int row = 0; row < 3; row++)
+            for (int col = 0; col < 9; col++) slotBg(graphics, 8 + col * 18, 112 + row * 18);
+        for (int col = 0; col < 9; col++) slotBg(graphics, 8 + col * 18, 170);
+    }
+
+    private void slotBg(GuiGraphics graphics, int x, int y) {
+        graphics.fill(leftPos + x - 1, topPos + y - 1, leftPos + x + 17, topPos + y + 17, 0xFF111820);
+    }
+
+    @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        renderTooltip(graphics, mouseX, mouseY);
+    }
+}
