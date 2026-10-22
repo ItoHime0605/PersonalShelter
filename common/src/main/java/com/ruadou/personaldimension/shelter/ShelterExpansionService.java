@@ -25,14 +25,14 @@ public final class ShelterExpansionService {
         int newSize = ShelterUpgradeRules.size(permitLevel);
         int half = newSize / 2;
         // Force-load all chunks that cover the new ring before inspecting or placing blocks.
-        for (int cx = -half >> 4; cx <= (half - 1) >> 4; cx++) {
-            for (int cz = -half >> 4; cz <= (half - 1) >> 4; cz++) {
+        for (int cx = -half >> 4; cx <= half >> 4; cx++) {
+            for (int cz = -half >> 4; cz <= half >> 4; cz++) {
                 world.getChunk(cx, cz);
             }
         }
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int x = -half; x < half; x++) {
-            for (int z = -half; z < half; z++) {
+        for (int x = -half; x <= half; x++) {
+            for (int z = -half; z <= half; z++) {
                 if (ShelterUpgradeRules.inside(oldLevel, x, z)) continue;
                 // Scan the entire buildable column. Checking only the six terrain layers
                 // would silently create land under an existing floating structure.
@@ -47,8 +47,8 @@ public final class ShelterExpansionService {
         // This does not yet provide crash-safe journaling or a persistent upgrade lock.
         List<BlockPos> placed = new ArrayList<>();
         try {
-            for (int x = -half; x < half; x++) {
-                for (int z = -half; z < half; z++) {
+            for (int x = -half; x <= half; x++) {
+                for (int z = -half; z <= half; z++) {
                     if (ShelterUpgradeRules.inside(oldLevel, x, z)) continue;
                     for (int y = -6; y <= -1; y++) {
                         BlockPos target = new BlockPos(x, y, z);
@@ -69,7 +69,7 @@ public final class ShelterExpansionService {
         // The caller must still verify ownership, take the permit transactionally,
         // and save the dimension data on the server thread.
         data.setShelterLevel(permitLevel);
-        world.getWorldBorder().setCenter(0.0D, 0.0D);
+        world.getWorldBorder().setCenter(0.5D, 0.5D);
         world.getWorldBorder().setSize(newSize);
         return Result.SUCCESS;
     }
