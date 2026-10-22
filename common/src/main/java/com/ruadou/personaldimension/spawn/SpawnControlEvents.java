@@ -5,6 +5,8 @@ import dev.architectury.event.events.common.EntityEvent;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Monster;
+import com.ruadou.personaldimension.platform.Platform;
 
 public final class SpawnControlEvents {
 
@@ -17,6 +19,13 @@ public final class SpawnControlEvents {
             }
             if (!(entity instanceof Mob mob)) {
                 return EventResult.pass();
+            }
+            // Personal Shelter: never allow natural hostile mob spawns in private dimensions.
+            // Spawn eggs, commands and other deliberate sources are unaffected by this rule.
+            if (entity instanceof Monster
+                    && Platform.ownerOf(serverLevel.dimension()).isPresent()
+                    && SpawnControlService.isNatural(type)) {
+                return EventResult.interruptFalse();
             }
             if (!SpawnControlService.isNatural(type)) {
                 return EventResult.pass();
