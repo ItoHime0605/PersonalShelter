@@ -770,7 +770,8 @@ public final class PersonalDimensionService {
             data.getRainTime(), data.getThunderTime(), data.getClearWeatherTime(),
             level.getDayTime(), daylight, weatherCycle,
             followTime, followWeather,
-            moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase);
+            moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase,
+            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).getShelterLevel());
         Platform.sendToPlayer(player, packet);
     }
 
