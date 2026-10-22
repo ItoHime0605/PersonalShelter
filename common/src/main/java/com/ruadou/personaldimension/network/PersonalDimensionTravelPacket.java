@@ -25,7 +25,7 @@ public record PersonalDimensionTravelPacket() implements CustomPacketPayload {
         StreamCodec.unit(new PersonalDimensionTravelPacket());
 
     public void handle(ServerPlayer player) {
-        PersonalDimensionService.handleTravel(player);
+        com.ruadou.personaldimension.dimension.ShelterTravelCountdown.begin(player, PersonalDimensionService::handleTravel);
     }
 
     @Override
