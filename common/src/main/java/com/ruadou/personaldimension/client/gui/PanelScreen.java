@@ -60,6 +60,7 @@ public abstract class PanelScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        ModernStyle.ensureThemeLoaded();
         graphics.fill(0, 0, this.width, this.height, ModernStyle.SCRIM);
         renderBehindPanel(graphics, mouseX, mouseY, partialTick);
         ModernStyle.panel(graphics, this.leftPos, this.topPos, PANEL_WIDTH, PANEL_HEIGHT);
