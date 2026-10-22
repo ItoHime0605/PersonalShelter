@@ -32,7 +32,8 @@ public record RequestVisitPacket(UUID targetOwner) implements CustomPacketPayloa
             RequestVisitPacket::new);
 
     public void handle(ServerPlayer player) {
-        PersonalDimensionService.handleVisit(player, this.targetOwner);
+        com.ruadou.personaldimension.dimension.ShelterTravelCountdown.begin(player,
+            actor -> PersonalDimensionService.handleVisit(actor, this.targetOwner));
     }
 
     @Override
