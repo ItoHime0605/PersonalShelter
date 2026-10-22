@@ -23,7 +23,9 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
         super.init();
         addRenderableWidget(Button.builder(Component.literal("上一頁"), b -> {
             onClose();
-            Minecraft.getInstance().setScreen(new com.ruadou.personaldimension.client.gui.PersonalDimensionControllerScreen());
+            var controller = new com.ruadou.personaldimension.client.gui.PersonalDimensionControllerScreen();
+            controller.showSettingsHome();
+            Minecraft.getInstance().setScreen(controller);
         }).bounds(leftPos + 111, topPos + 7, 57, 18).build());
         if (menu.shelterLevel() >= 4) return;
         Button confirm = Button.builder(Component.literal("使用許可證擴張"), b -> {
