@@ -21,16 +21,16 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
 
     @Override protected void init() {
         super.init();
-        if (menu.shelterLevel() >= 4) {
-            addRenderableWidget(Button.builder(Component.literal("退回上一頁"), b -> onClose())
-                .bounds(leftPos + 25, topPos + 80, 126, 18).build());
-            return;
-        }
+        addRenderableWidget(Button.builder(Component.literal("上一頁"), b -> {
+            onClose();
+            Minecraft.getInstance().setScreen(new com.ruadou.personaldimension.client.gui.PersonalDimensionControllerScreen());
+        }).bounds(leftPos + 111, topPos + 7, 57, 18).build());
+        if (menu.shelterLevel() >= 4) return;
         Button confirm = Button.builder(Component.literal("使用許可證擴張"), b -> {
             if (Minecraft.getInstance().gameMode != null)
                 Minecraft.getInstance().gameMode.handleInventoryButtonClick(menu.containerId, 0);
         })
-            .bounds(leftPos + 25, topPos + 80, 126, 18).build();
+            .bounds(leftPos + 25, topPos + 84, 126, 18).build();
         addRenderableWidget(confirm);
     }
 
@@ -46,8 +46,12 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, Component.literal("土地擴張"), 8, 8, 0xFFE6E8ED, false);
         if (menu.shelterLevel() >= 4) {
-            String text = "你已經擁有太多土地了，留點土地給別人吧！";
-            graphics.drawString(font, Component.literal(text), Math.max(8, (imageWidth - font.width(text)) / 2), 38, 0xFFFFD38A, false);
+            String text = "你已擁有太多土地，留點給別人吧！";
+            int tx = Math.max(8, (imageWidth - font.width(text)) / 2);
+            if (font.width(text) > imageWidth - 16) {
+                graphics.drawString(font, Component.literal("你已擁有太多土地，"), 28, 38, 0xFFFFD38A, false);
+                graphics.drawString(font, Component.literal("留點給別人吧！"), 36, 51, 0xFFFFD38A, false);
+            } else graphics.drawString(font, Component.literal(text), tx, 38, 0xFFFFD38A, false);
             return;
         }
         String heading = "末日房產特惠！";
