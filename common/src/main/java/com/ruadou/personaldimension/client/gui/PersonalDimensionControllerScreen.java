@@ -195,7 +195,6 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             return;
         }
         int btnWidth = 146;
-        int halfWidth = 69;
         if (ownDimensionExists()) {
             int renameY = contentTop() + PADDING + 100;
             int nameX = contentLeft();
@@ -218,38 +217,11 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         int x = this.leftPos + (PANEL_WIDTH - btnWidth) / 2;
         int travelY = this.topPos + PANEL_HEIGHT - PADDING - 20;
         int upperY = travelY - PADDING - 20;
-        int publicY = upperY - PADDING - 20;
-        // 公共维度按钮
-        if (publicDimensionExists()) {
-            boolean inPublic = isInPublicDimension();
-            // 已创建：左侧为"进入/退出公共维度"（玩家在公共维度内显示退出），右侧"删除"（仅 OP）
-            this.addRenderableWidget(new FlatButton(
-                    Component.translatable(inPublic
-                        ? "gui.personaldimension.controller.public.exit"
-                        : "gui.personaldimension.controller.public.enter"),
-                    x, publicY, halfWidth, 20, b -> {
-                        if (inPublic) {
-                            exitPublic();
-                        } else {
-                            enterPublic();
-                        }
-                    }));
-            if (isOp()) {
-                this.addRenderableWidget(new FlatButton(
-                        Component.translatable("gui.personaldimension.controller.public.delete"),
-                        x + halfWidth + gap, publicY, halfWidth, 20, b -> beginDeletePublic()));
-            }
-        } else {
-            // 未创建：显示"创建公共维度"
-            this.addRenderableWidget(new FlatButton(
-                    Component.translatable("gui.personaldimension.controller.public.create"),
-                    x, publicY, btnWidth, 20, b -> createPublic()));
-        }
         if (ownDimensionExists()) {
             // 已创建：提供"删除维度"入口（点击进入长按确认）
             this.addRenderableWidget(new FlatButton(
                     Component.translatable("gui.personaldimension.controller.delete.button"),
-                    x, upperY, btnWidth, 20, b -> beginDelete()));
+                    this.leftPos + PANEL_WIDTH - PADDING - 70, travelY - 28, 62, 18, b -> beginDelete()));
         } else {
             // 未创建：提供"创建维度"入口
             this.addRenderableWidget(new FlatButton(
@@ -389,7 +361,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     /** 设置主页：各分组入口（时间 / 天气 / 月相 / 生物生成控制，后续可在此追加游戏规则等）。 */
     private void addSettingsHome() {
         int contentTop = contentTop();
-        int btnWidth = 160;
+        int btnWidth = 146;
         int x = this.leftPos + (PANEL_WIDTH - btnWidth) / 2;
         int firstY = contentTop + PADDING;
         this.addRenderableWidget(new FlatButton(
