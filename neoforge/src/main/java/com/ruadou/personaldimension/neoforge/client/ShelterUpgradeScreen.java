@@ -29,6 +29,14 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
         addRenderableWidget(confirm);
     }
 
+    @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.drawString(font, Component.literal("土地擴張"), 8, 8, 0xFFE6E8ED, false);
+        graphics.drawString(font, Component.literal("末日房產特惠！"), 15, 24, 0xFFFFD38A, false);
+        graphics.drawString(font, Component.literal("一張許可證，換來更多安身之地。"), 8, 38, 0xFFE0E3EA, false);
+        graphics.drawString(font, Component.literal("這筆買賣，保證物超所值！"), 8, 48, 0xFFADB7C6, false);
+        graphics.drawString(font, Component.literal("物品欄"), 8, 100, 0xFFD9E1EB, false);
+    }
+
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xFF20252F);
         graphics.fill(leftPos + 6, topPos + 6, leftPos + 170, topPos + 190, 0xFF303744);
