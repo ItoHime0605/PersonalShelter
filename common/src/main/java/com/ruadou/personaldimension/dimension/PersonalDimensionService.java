@@ -777,18 +777,20 @@ public final class PersonalDimensionService {
     }
 
     /**
-     * Personal Shelter 初始平台：64×64，表面 y=-1，下面五层泥土。
-     * 僅在新建維度時呼叫；後續進入不重建，避免覆蓋玩家建築。
-     * 先載入涵蓋 -32..31 的 4×4 區塊，再生成地形。
+     * Personal Shelter 初始平台：依等級 0 的尺寸建立 48×48 草地。
+     * 表面 y=-1，下面五層泥土；只在建立維度時生成。
      */
     private static BlockPos buildVoidPlatform(ServerLevel level) {
-        for (int chunkX = -2; chunkX <= 1; chunkX++) {
-            for (int chunkZ = -2; chunkZ <= 1; chunkZ++) {
+        int half = com.ruadou.personaldimension.shelter.ShelterUpgradeRules.size(0) / 2;
+        int minChunk = (-half) >> 4;
+        int maxChunk = (half - 1) >> 4;
+        for (int chunkX = minChunk; chunkX <= maxChunk; chunkX++) {
+            for (int chunkZ = minChunk; chunkZ <= maxChunk; chunkZ++) {
                 level.getChunk(chunkX, chunkZ);
             }
         }
-        for (int x = -32; x < 32; x++) {
-            for (int z = -32; z < 32; z++) {
+        for (int x = -half; x < half; x++) {
+            for (int z = -half; z < half; z++) {
                 for (int y = -6; y < -1; y++) {
                     level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.DIRT.defaultBlockState());
                 }
