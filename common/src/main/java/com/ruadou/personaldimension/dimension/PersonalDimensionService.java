@@ -542,6 +542,20 @@ public final class PersonalDimensionService {
      * <p>维度未创建则动作栏提示且<b>不自动建维</b>（创建须经控制器"创建维度"界面消耗生成器）；
      * 已创建则回 own 记忆点，记忆点缺失时兜底铺虚空草平台并落到 (0,0,0)。
      */
+    /** Recheck the visitor context when the countdown finishes. */
+    public static void handleReturnToOwnFromVisit(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || !Platform.isModDimension(player.level().dimension())
+            || Platform.isPublicDimension(player.level().dimension())
+            || player.level().dimension().equals(Platform.levelKeyFor(player.getUUID()))) return;
+        if (server.getLevel(Platform.levelKeyFor(player.getUUID())) == null) {
+            player.displayClientMessage(Component.literal("尚未建立自己的私人土地。"), true);
+            return;
+        }
+        updateMemory(player, TravelMemory::withoutVisitReturn);
+        teleportToOwn(player);
+    }
+
     private static void teleportToOwn(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) {
