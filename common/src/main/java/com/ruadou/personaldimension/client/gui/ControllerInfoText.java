@@ -34,6 +34,13 @@ public final class ControllerInfoText {
 
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
             dimensionValue(mc), Math.max(100, maxWidth - 84));
+        if (info != null && info.created()) {
+            int level = Math.max(0, Math.min(4, info.shelterLevel()));
+            String[] numerals = {"零", "壹", "貳", "參", "肆"};
+            int size = com.ruadou.personaldimension.shelter.ShelterUpgradeRules.size(level);
+            cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
+                Component.literal("目前土地等級：" + numerals[level] + " (" + size + "×" + size + ")"));
+        }
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
             Component.translatable("gui.personaldimension.controller.info.weather").append(": ").append(weatherText(info)));
         cursorY = drawLine(graphics, font, x, cursorY, maxWidth,
