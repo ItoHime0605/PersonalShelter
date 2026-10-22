@@ -379,13 +379,13 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 x, firstY + 2 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.MOON_PHASE)));
         this.addRenderableWidget(new FlatButton(Component.literal("介面顏色"),
-                x, firstY + 4 * (20 + PADDING), btnWidth, 20,
+                x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.THEME)));
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(
                     Component.translatable("gui.personaldimension.controller.settings.shelter_upgrade"),
-                    x, firstY + 3 * (20 + PADDING), btnWidth, 20,
+                    x, firstY + 4 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
         }
     }
@@ -394,7 +394,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private void addThemeSelection() {
         int x = contentLeft() + 10;
         int y = contentTop() + PADDING + 18;
-        String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色"};
+        String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色", "廢土風格"};
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
             x, contentTop() + PADDING, 78, 16, b -> backToSettingsHome()));
         for (int i = 0; i < names.length; i++) {
