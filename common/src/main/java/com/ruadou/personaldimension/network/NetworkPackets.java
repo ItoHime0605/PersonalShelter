@@ -18,6 +18,7 @@ public final class NetworkPackets {
     public static final List<PacketEntry> S2C_PACKETS = List.of(
         new PacketEntry(UpdateDimensionsPacket.TYPE, UpdateDimensionsPacket.STREAM_CODEC),
         new PacketEntry(DimensionInfoPacket.TYPE, DimensionInfoPacket.STREAM_CODEC),
+        new PacketEntry(ShelterNamePacket.TYPE, ShelterNamePacket.STREAM_CODEC),
         new PacketEntry(FriendDataPacket.TYPE, FriendDataPacket.STREAM_CODEC),
         new PacketEntry(OnlinePlayersPacket.TYPE, OnlinePlayersPacket.STREAM_CODEC),
         new PacketEntry(VisitListPacket.TYPE, VisitListPacket.STREAM_CODEC),
@@ -30,6 +31,8 @@ public final class NetworkPackets {
 
     public static final List<PacketEntry> C2S_PACKETS = List.of(
         new PacketEntry(RequestDimensionInfoPacket.TYPE, RequestDimensionInfoPacket.STREAM_CODEC),
+        new PacketEntry(RequestShelterNamePacket.TYPE, RequestShelterNamePacket.STREAM_CODEC),
+        new PacketEntry(SetShelterNamePacket.TYPE, SetShelterNamePacket.STREAM_CODEC),
         new PacketEntry(SetDimensionTimePacket.TYPE, SetDimensionTimePacket.STREAM_CODEC),
         new PacketEntry(SetDimensionDaylightPacket.TYPE, SetDimensionDaylightPacket.STREAM_CODEC),
         new PacketEntry(SetDimensionWeatherPacket.TYPE, SetDimensionWeatherPacket.STREAM_CODEC),
