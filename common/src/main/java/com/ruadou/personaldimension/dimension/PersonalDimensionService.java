@@ -777,28 +777,28 @@ public final class PersonalDimensionService {
     }
 
     /**
-     * Personal Shelter 初始平台：依等級 0 的尺寸建立 48×48 草地。
+     * Personal Shelter 初始平台：依等級 0 的尺寸建立 47×47 草地。
      * 表面 y=-1，下面五層泥土；只在建立維度時生成。
      */
     private static BlockPos buildVoidPlatform(ServerLevel level) {
         int half = com.ruadou.personaldimension.shelter.ShelterUpgradeRules.size(0) / 2;
         int minChunk = (-half) >> 4;
-        int maxChunk = (half - 1) >> 4;
+        int maxChunk = half >> 4;
         for (int chunkX = minChunk; chunkX <= maxChunk; chunkX++) {
             for (int chunkZ = minChunk; chunkZ <= maxChunk; chunkZ++) {
                 level.getChunk(chunkX, chunkZ);
             }
         }
-        for (int x = -half; x < half; x++) {
-            for (int z = -half; z < half; z++) {
+        for (int x = -half; x <= half; x++) {
+            for (int z = -half; z <= half; z++) {
                 for (int y = -6; y < -1; y++) {
                     level.setBlockAndUpdate(new BlockPos(x, y, z), Blocks.DIRT.defaultBlockState());
                 }
                 level.setBlockAndUpdate(new BlockPos(x, -1, z), Blocks.GRASS_BLOCK.defaultBlockState());
             }
         }
-        level.getWorldBorder().setCenter(0.0D, 0.0D);
-        level.getWorldBorder().setSize(2.0D * half);
+        level.getWorldBorder().setCenter(0.5D, 0.5D);
+        level.getWorldBorder().setSize(com.ruadou.personaldimension.shelter.ShelterUpgradeRules.size(0));
         return new BlockPos(0, 0, 0);
     }
 
