@@ -26,7 +26,7 @@ import net.minecraft.nbt.Tag;
 public final class OwnerFriendConfig {
 
     /** 新建配置时自动播种的默认组名（用户可改名，仅作初始种子值）。 */
-    public static final String DEFAULT_GROUP_NAME = "默认组";
+    public static final String DEFAULT_GROUP_NAME = "預設群組";
 
     private static final String TAG_FRIENDS = "Friends";
     private static final String TAG_FRIEND_ID = "Id";
@@ -55,7 +55,7 @@ public final class OwnerFriendConfig {
     public static OwnerFriendConfig createDefault(EnumSet<Permission> defaultPerms) {
         OwnerFriendConfig config = new OwnerFriendConfig();
         config.groups.put(DEFAULT_GROUP_NAME,
-            new PermissionGroup(DEFAULT_GROUP_NAME, safeCopy(defaultPerms)));
+            new PermissionGroup(DEFAULT_GROUP_NAME, EnumSet.noneOf(Permission.class)));
         config.defaultGroupName = DEFAULT_GROUP_NAME;
         return config;
     }
@@ -67,7 +67,7 @@ public final class OwnerFriendConfig {
     }
 
     public void addFriend(UUID friend) {
-        this.friends.putIfAbsent(friend, "");
+        this.friends.putIfAbsent(friend, this.defaultGroupName == null ? "" : this.defaultGroupName);
     }
 
     public void removeFriend(UUID friend) {
@@ -105,7 +105,7 @@ public final class OwnerFriendConfig {
      * @return 是否新建成功
      */
     public boolean createGroup(String name, EnumSet<Permission> defaultPerms) {
-        if (name == null || name.isBlank() || this.groups.containsKey(name)) {
+        if (name == null || name.isBlank() || this.groups.containsKey(name) || DEFAULT_GROUP_NAME.equals(name)) {
             return false;
         }
         this.groups.put(name, new PermissionGroup(name, safeCopy(defaultPerms)));
@@ -114,7 +114,7 @@ public final class OwnerFriendConfig {
 
     /** 重命名组，并同步更新默认组名与好友分配指向。返回是否成功。 */
     public boolean renameGroup(String oldName, String newName) {
-        if (newName == null || newName.isBlank()
+        if (DEFAULT_GROUP_NAME.equals(oldName) || newName == null || newName.isBlank()
             || !this.groups.containsKey(oldName) || this.groups.containsKey(newName)) {
             return false;
         }
@@ -143,7 +143,7 @@ public final class OwnerFriendConfig {
 
     /** 删除组，并清理默认组指向与好友分配。返回是否成功。 */
     public boolean deleteGroup(String name) {
-        if (this.groups.remove(name) == null) {
+        if (DEFAULT_GROUP_NAME.equals(name) || this.groups.remove(name) == null) {
             return false;
         }
         if (name.equals(this.defaultGroupName)) {
@@ -163,7 +163,7 @@ public final class OwnerFriendConfig {
 
     /** 设默认组（组不存在则忽略）。 */
     public void setDefaultGroup(String name) {
-        if (this.groups.containsKey(name)) {
+        if (DEFAULT_GROUP_NAME.equals(name)) {
             this.defaultGroupName = name;
         }
     }
