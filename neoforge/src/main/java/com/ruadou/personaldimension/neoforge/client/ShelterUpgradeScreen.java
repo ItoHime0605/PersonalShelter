@@ -34,6 +34,15 @@ public final class ShelterUpgradeScreen extends AbstractContainerScreen<ShelterU
         addRenderableWidget(confirm);
     }
 
+    private int lastLevel = -1;
+    @Override public void containerTick() {
+        super.containerTick();
+        if (lastLevel != menu.shelterLevel()) {
+            lastLevel = menu.shelterLevel();
+            rebuildWidgets();
+        }
+    }
+
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, Component.literal("土地擴張"), 8, 8, 0xFFE6E8ED, false);
         if (menu.shelterLevel() >= 4) {
