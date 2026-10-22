@@ -93,15 +93,10 @@ public class PersonalDimensionCreateScreen extends AbstractContainerScreen<Perso
             Component.translatable("gui.personaldimension.create.preset.custom"),
             lx, this.topPos + 68, 120, 18, b -> selectPreset(DimensionPreset.CUSTOM));
         this.addRenderableWidget(this.voidButton);
-        this.addRenderableWidget(this.skyIslandButton);
-        this.addRenderableWidget(this.customButton);
+        // Legacy sky-island and custom-template choices are intentionally hidden.
 
         // 仅自定义预设提供"编辑模板"入口
-        if (this.selected == DimensionPreset.CUSTOM) {
-            this.addRenderableWidget(new FlatButton(
-                Component.translatable("gui.personaldimension.create.canvas.edit"),
-                lx, this.topPos + 94, 120, 18, b -> openCanvas()));
-        }
+
 
         // 右列：返回 / 创建
         this.addRenderableWidget(new FlatButton(
@@ -123,8 +118,7 @@ public class PersonalDimensionCreateScreen extends AbstractContainerScreen<Perso
     /** 刷新预设按钮的选中态（描金边），实现单选视觉反馈。 */
     private void refreshSelection() {
         this.voidButton.setSelected(this.selected == DimensionPreset.VOID);
-        this.skyIslandButton.setSelected(this.selected == DimensionPreset.SKY_ISLAND);
-        this.customButton.setSelected(this.selected == DimensionPreset.CUSTOM);
+
     }
 
     // ---------------------------------------------------------------------
@@ -207,12 +201,7 @@ public class PersonalDimensionCreateScreen extends AbstractContainerScreen<Perso
                 this.minecraft.player.displayClientMessage(Component.literal("請先將游標上的物品放回背包。"), false);
             return;
         }
-        if (this.selected == DimensionPreset.CUSTOM) {
-            Platform.sendToServer(
-                new CreateDimensionPacket(DimensionPreset.CUSTOM.id(), Optional.of(this.canvas.build())));
-        } else {
-            Platform.sendToServer(new CreateDimensionPacket(this.selected.id()));
-        }
+        Platform.sendToServer(new CreateDimensionPacket(DimensionPreset.VOID.id()));
     }
 
     /** 返回控制器界面：先关闭容器通知服务端，再打开纯客户端控制器界面。 */
