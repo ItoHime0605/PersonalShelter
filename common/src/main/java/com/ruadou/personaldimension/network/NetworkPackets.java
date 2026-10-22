@@ -44,6 +44,7 @@ public final class NetworkPackets {
         new PacketEntry(SetDimensionMoonPhaseCyclePacket.TYPE, SetDimensionMoonPhaseCyclePacket.STREAM_CODEC),
         new PacketEntry(SetFollowOverworldMoonPhasePacket.TYPE, SetFollowOverworldMoonPhasePacket.STREAM_CODEC),
         new PacketEntry(PersonalDimensionTravelPacket.TYPE, PersonalDimensionTravelPacket.STREAM_CODEC),
+        new PacketEntry(ReturnToOwnShelterPacket.TYPE, ReturnToOwnShelterPacket.STREAM_CODEC),
         new PacketEntry(OpenCreateMenuPacket.TYPE, OpenCreateMenuPacket.STREAM_CODEC),
         new PacketEntry(OpenShelterUpgradePacket.TYPE, OpenShelterUpgradePacket.STREAM_CODEC),
         new PacketEntry(CreateDimensionPacket.TYPE, CreateDimensionPacket.STREAM_CODEC),
