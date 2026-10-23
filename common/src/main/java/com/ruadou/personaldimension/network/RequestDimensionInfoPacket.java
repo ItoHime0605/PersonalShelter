@@ -41,7 +41,7 @@ public record RequestDimensionInfoPacket() implements CustomPacketPayload {
         ServerLevel personal = server.getLevel(key);
         if (personal == null || !(personal.getLevelData() instanceof ServerLevelData data)) {
             Platform.sendToPlayer(player, new DimensionInfoPacket(
-                false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0));
+                false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0, false));
             return;
         }
         boolean daylight = true;
@@ -74,7 +74,10 @@ public record RequestDimensionInfoPacket() implements CustomPacketPayload {
             moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase,
             java.util.Optional.ofNullable(personal.getDataStorage().get(com.ruadou.personaldimension.dimension.PersonalDimensionData.FACTORY,
                 com.ruadou.personaldimension.dimension.PersonalDimensionData.ID))
-                .map(com.ruadou.personaldimension.dimension.PersonalDimensionData::getShelterLevel).orElse(0));
+                .map(com.ruadou.personaldimension.dimension.PersonalDimensionData::getShelterLevel).orElse(0),
+            java.util.Optional.ofNullable(personal.getDataStorage().get(com.ruadou.personaldimension.dimension.PersonalDimensionData.FACTORY,
+                com.ruadou.personaldimension.dimension.PersonalDimensionData.ID))
+                .map(com.ruadou.personaldimension.dimension.PersonalDimensionData::isShelterEntryLocked).orElse(false));
         Platform.sendToPlayer(player, response);
     }
 
