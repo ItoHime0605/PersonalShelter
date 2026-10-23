@@ -412,12 +412,12 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             boolean locked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
                 && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
             lastEntryLockState = locked;
-            FlatButton yes = new FlatButton(Component.literal("進入點：是 ○"),
+            FlatButton yes = new FlatButton(Component.literal("鎖定：是 " + (locked ? "●" : "○")),
                 x, firstY + 5 * (20 + PADDING), 72, 20,
                 b -> { Platform.sendToServer(new SetShelterEntryLockPacket(true)); });
             yes.setSelected(locked);
             this.addRenderableWidget(yes);
-            FlatButton no = new FlatButton(Component.literal("否 ○"),
+            FlatButton no = new FlatButton(Component.literal("否 " + (!locked ? "●" : "○")),
                 x + 74, firstY + 5 * (20 + PADDING), 72, 20,
                 b -> { Platform.sendToServer(new SetShelterEntryLockPacket(false)); });
             no.setSelected(!locked);
