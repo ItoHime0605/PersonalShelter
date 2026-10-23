@@ -1,9 +1,9 @@
 {
   "textures": {
-    "particle": "minecraft:block/iron_block",
-    "metal": "minecraft:block/iron_block",
-    "keyboard": "minecraft:block/deepslate_tiles",
-    "screen": "minecraft:block/green_concrete"
+    "particle": "personaldimension:block/terminal_metal",
+    "metal": "personaldimension:block/terminal_metal",
+    "keyboard": "personaldimension:block/terminal_keyboard",
+    "screen": "personaldimension:block/terminal_screen"
   },
   "elements": [
     {
