@@ -77,9 +77,14 @@ public class FlatButton extends Button {
         }
 
         Font font = Minecraft.getInstance().font;
-        Component label = GuiText.ellipsize(font, this.getMessage(), w - 6);
-        int textX = x + (w - font.width(label)) / 2;
-        int textY = y + (h - font.lineHeight) / 2;
-        graphics.drawString(font, label, textX, textY, textColor, false);
+        float scale = ModernStyle.largeText() ? 1.22F : 1.0F;
+        Component label = GuiText.ellipsize(font, this.getMessage(), Math.max(10, (int) ((w - 6) / scale)));
+        float textX = x + (w - font.width(label) * scale) / 2.0F;
+        float textY = y + (h - font.lineHeight * scale) / 2.0F;
+        graphics.pose().pushPose();
+        graphics.pose().translate(textX, textY, 0);
+        graphics.pose().scale(scale, scale, 1.0F);
+        graphics.drawString(font, label, 0, 0, textColor, false);
+        graphics.pose().popPose();
     }
 }
