@@ -28,6 +28,7 @@ public record SetShelterEntryLockPacket(boolean locked) implements CustomPacketP
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         if (!locked) {
             data.unlockShelterEntry();
+            com.ruadou.personaldimension.dimension.PersonalDimensionService.sendDimensionInfoToPlayer(player);
             player.displayClientMessage(Component.literal("進入點鎖定：否"), true);
             return;
         }
@@ -40,6 +41,7 @@ public record SetShelterEntryLockPacket(boolean locked) implements CustomPacketP
             return;
         }
         data.lockShelterEntry(feet, player.getYRot(), player.getXRot());
+        com.ruadou.personaldimension.dimension.PersonalDimensionService.sendDimensionInfoToPlayer(player);
         player.displayClientMessage(Component.literal("進入點鎖定：是（已記錄目前位置與面向）"), true);
     }
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
