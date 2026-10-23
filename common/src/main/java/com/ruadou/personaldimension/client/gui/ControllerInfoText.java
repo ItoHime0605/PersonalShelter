@@ -60,13 +60,18 @@ public final class ControllerInfoText {
     }
 
     private static int drawLine(GuiGraphics graphics, Font font, int x, int y, int maxWidth, Component text, int lineWidth) {
-        List<FormattedCharSequence> lines = font.split(text, lineWidth);
+        float scale = ModernStyle.largeText() ? 1.22F : 1.0F;
+        List<FormattedCharSequence> lines = font.split(text, Math.max(20, (int) (lineWidth / scale)));
         int sub = 0;
         for (FormattedCharSequence seq : lines) {
-            graphics.drawString(font, seq, x, y + font.lineHeight * sub, ModernStyle.TEXT, false);
+            graphics.pose().pushPose();
+            graphics.pose().translate(x, y + (int) (font.lineHeight * scale * sub), 0);
+            graphics.pose().scale(scale, scale, 1.0F);
+            graphics.drawString(font, seq, 0, 0, ModernStyle.TEXT, false);
+            graphics.pose().popPose();
             sub++;
         }
-        return y + font.lineHeight * Math.max(1, sub) + 5;
+        return y + (int) (font.lineHeight * scale * Math.max(1, sub)) + 5;
     }
 
     /** 维度 ID 值：玩家自己的个人维度键；客户端已知维度集合中不含该键则视为暂未创建。 */
