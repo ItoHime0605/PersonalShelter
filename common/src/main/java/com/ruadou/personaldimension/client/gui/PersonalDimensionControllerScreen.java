@@ -70,6 +70,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private Tab activeTab = Tab.INFO;
     private SettingsPage settingsPage = SettingsPage.HOME;
     private int refreshCounter;
+    private Boolean lastEntryLockState;
 
     private Button travelButton;
     private boolean renaming;
@@ -410,6 +411,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         if (ownDimensionExists()) {
             boolean locked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
                 && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
+            lastEntryLockState = locked;
             FlatButton yes = new FlatButton(Component.literal("進入點：是 ○"),
                 x, firstY + 5 * (20 + PADDING), 72, 20,
                 b -> { Platform.sendToServer(new SetShelterEntryLockPacket(true)); });
@@ -490,6 +492,14 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     @Override
     public void tick() {
+        if (!isVisitingFriendLand() && activeTab == Tab.SETTINGS && settingsPage == SettingsPage.HOME
+            && ownDimensionExists() && com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null) {
+            boolean locked = com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
+            if (lastEntryLockState == null || lastEntryLockState.booleanValue() != locked) {
+                lastEntryLockState = locked;
+                rebuildWidgets();
+            }
+        }
         // 定期向服务端请求个人维度信息（含仅服务端持有的时刻/计时字段）
         if (this.refreshCounter <= 0) {
             requestInfo();
