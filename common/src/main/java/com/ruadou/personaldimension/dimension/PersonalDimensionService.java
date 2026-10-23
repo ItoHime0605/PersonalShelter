@@ -586,7 +586,17 @@ public final class PersonalDimensionService {
             } else teleportToSafeShelterSpawn(player, own);
         } else if (ownPoint.isPresent()) {
             TravelPoint p = ownPoint.get();
-            player.teleportTo(own, p.x(), p.y(), p.z(), p.yaw(), p.pitch());
+            BlockPos feet = BlockPos.containing(p.x(), p.y(), p.z());
+            if (p.dimension().equals(own.dimension())
+                && com.ruadou.personaldimension.shelter.ShelterUpgradeRules.inside(
+                    entryData.getShelterLevel(), feet.getX(), feet.getZ())
+                && own.getBlockState(feet).getCollisionShape(own, feet).isEmpty()
+                && own.getBlockState(feet.above()).getCollisionShape(own, feet.above()).isEmpty()
+                && !own.getBlockState(feet.below()).getCollisionShape(own, feet.below()).isEmpty()) {
+                player.teleportTo(own, p.x(), p.y(), p.z(), p.yaw(), p.pitch());
+            } else {
+                teleportToSafeShelterSpawn(player, own);
+            }
         } else {
             teleportToSafeShelterSpawn(player, own);
         }
