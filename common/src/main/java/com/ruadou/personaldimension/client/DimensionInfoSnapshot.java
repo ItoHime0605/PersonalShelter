@@ -28,10 +28,10 @@ public record DimensionInfoSnapshot(boolean created,
                                     long dayTime, boolean daylightCycle, boolean weatherCycle,
                                     boolean followOverworldTime, boolean followOverworldWeather,
                                     int moonPhaseOverride, boolean moonPhaseCycle, boolean followOverworldMoonPhase,
-                                    int moonPhase, int shelterLevel) {
+                                    int moonPhase, int shelterLevel, boolean shelterEntryLocked) {
 
     /** 个人维度尚未创建时的占位快照。 */
     public static DimensionInfoSnapshot uncreated() {
-        return new DimensionInfoSnapshot(false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0);
+        return new DimensionInfoSnapshot(false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0, false);
     }
 }
