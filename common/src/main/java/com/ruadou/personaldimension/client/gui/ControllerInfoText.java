@@ -169,15 +169,6 @@ public final class ControllerInfoText {
         long dayTime = info.dayTime() % 24000L;
         int totalMinutes = (int) (((dayTime + 6000L) % 24000L) * 1440L / 24000L);
         String base = String.format("%02d:%02d", totalMinutes / 60, totalMinutes % 60);
-        // 跟随主世界时优先提示（此时时刻即主世界时刻）
-        if (info.followOverworldTime()) {
-            return Component.literal(base + " ")
-                .append(Component.translatable("gui.personaldimension.controller.info.following"));
-        }
-        if (!info.daylightCycle()) {
-            return Component.literal(base + " ")
-                .append(Component.translatable("gui.personaldimension.controller.info.time_frozen"));
-        }
         return Component.literal(base);
     }
 }
