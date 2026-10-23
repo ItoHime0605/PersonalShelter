@@ -785,7 +785,8 @@ public final class PersonalDimensionService {
             level.getDayTime(), daylight, weatherCycle,
             followTime, followWeather,
             moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase,
-            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).getShelterLevel());
+            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).getShelterLevel(),
+            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).isShelterEntryLocked());
         Platform.sendToPlayer(player, packet);
     }
 
