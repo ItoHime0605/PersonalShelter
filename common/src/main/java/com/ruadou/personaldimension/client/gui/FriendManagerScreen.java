@@ -39,6 +39,7 @@ public class FriendManagerScreen extends FriendBaseScreen {
     private EditBox uuidInput;
     private boolean uuidInvalid;
     private UUID expandedGroupFor;
+    private int groupPickerOffset;
 
     public FriendManagerScreen(Screen parent) {
         super(Component.translatable("gui.personaldimension.friend.title"), parent);
@@ -70,6 +71,7 @@ public class FriendManagerScreen extends FriendBaseScreen {
             this.addRenderableWidget(new FlatButton(groupLabel(f.group()),
                 groupX, rowY + 1, GROUP_BTN_W, 20, b -> {
                     expandedGroupFor = f.id().equals(expandedGroupFor) ? null : f.id();
+                    groupPickerOffset = 0;
                     rebuildWidgets();
                 }));
             this.addRenderableWidget(new FlatButton(
@@ -83,20 +85,31 @@ public class FriendManagerScreen extends FriendBaseScreen {
             FriendView selectedFriend = friends.stream().filter(f -> f.id().equals(expandedGroupFor)).findFirst().orElse(null);
             if (selectedFriend != null) {
                 int selectedIndex = friends.indexOf(selectedFriend) - scrollOffset;
-                // Display the picker in the right-hand column without covering the UUID field.
-                // Long group lists are paged so the picker stays inside the friend-list area.
+                // Four rows remain inside the list: paging arrows + two choices.
                 int pickerTop = listTop;
-                int pickerRows = Math.min(VISIBLE_ROWS, groups.size());
-                int pageStart = Math.max(0, Math.min(groups.size() - pickerRows,
-                    groups.indexOf(groups.stream().filter(g -> g.name().equals(selectedFriend.group()))
-                        .findFirst().orElse(groups.isEmpty() ? null : groups.get(0)))));
-                for (int n = 0; n < pickerRows; n++) {
-                    GroupView g = groups.get(pageStart + n);
+                int pageSize = 2;
+                groupPickerOffset = Math.max(0, Math.min(groupPickerOffset, Math.max(0, groups.size() - pageSize)));
+                if (groups.size() > pageSize) {
+                    this.addRenderableWidget(new FlatButton(Component.literal("▲ 上一頁"),
+                        groupX, pickerTop, GROUP_BTN_W, 19, b -> {
+                            groupPickerOffset = Math.max(0, groupPickerOffset - pageSize);
+                            rebuildWidgets();
+                        }));
+                }
+                for (int n = 0; n < Math.min(pageSize, groups.size() - groupPickerOffset); n++) {
+                    GroupView g = groups.get(groupPickerOffset + n);
                     final String groupName = g.name();
                     this.addRenderableWidget(new FlatButton(Component.literal(groupName),
-                        groupX, pickerTop + n * ROW_H, GROUP_BTN_W, 20, b -> {
+                        groupX, pickerTop + (n + 1) * ROW_H, GROUP_BTN_W, 20, b -> {
                             Platform.sendToServer(FriendConfigActionPacket.assignGroup(selectedFriend.id(), groupName));
                             expandedGroupFor = null;
+                            rebuildWidgets();
+                        }));
+                }
+                if (groups.size() > pageSize) {
+                    this.addRenderableWidget(new FlatButton(Component.literal("▼ 下一頁"),
+                        groupX, pickerTop + 3 * ROW_H, GROUP_BTN_W, 19, b -> {
+                            groupPickerOffset = Math.min(Math.max(0, groups.size() - pageSize), groupPickerOffset + pageSize);
                             rebuildWidgets();
                         }));
                 }
