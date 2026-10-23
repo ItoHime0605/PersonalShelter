@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +165,15 @@ public final class PersonalDimensionGuardEvents {
         double safeZ = ShelterBoundary.clampCoordinate(shelterLevel, z);
         player.connection.teleport(safeX, player.getY(), safeZ, player.getYRot(), player.getXRot());
         player.setDeltaMovement(0.0D, player.getDeltaMovement().y, 0.0D);
+    }
+
+    /** Release BossBar and border bookkeeping when a player disconnects. */
+    @SubscribeEvent
+    public static void onShelterLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            com.ruadou.personaldimension.dimension.ShelterTravelCountdown.cancel(player);
+            LAST_BORDER_STATE.remove(player.getUUID());
+        }
     }
 
     /**
