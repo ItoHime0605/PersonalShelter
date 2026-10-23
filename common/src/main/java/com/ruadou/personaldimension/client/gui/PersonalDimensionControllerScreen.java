@@ -408,12 +408,18 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 x, firstY + 3 * (20 + PADDING), btnWidth, 20,
                 b -> openSettingsPage(SettingsPage.THEME)));
         if (ownDimensionExists()) {
-            this.addRenderableWidget(new FlatButton(Component.literal("進入點鎖定：是"),
-                x, firstY + 5 * (20 + PADDING), 70, 20,
-                b -> Platform.sendToServer(new SetShelterEntryLockPacket(true))));
-            this.addRenderableWidget(new FlatButton(Component.literal("否"),
+            boolean locked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
+                && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
+            FlatButton yes = new FlatButton(Component.literal("進入點：是 ○"),
+                x, firstY + 5 * (20 + PADDING), 72, 20,
+                b -> { Platform.sendToServer(new SetShelterEntryLockPacket(true)); });
+            yes.setSelected(locked);
+            this.addRenderableWidget(yes);
+            FlatButton no = new FlatButton(Component.literal("否 ○"),
                 x + 74, firstY + 5 * (20 + PADDING), 72, 20,
-                b -> Platform.sendToServer(new SetShelterEntryLockPacket(false))));
+                b -> { Platform.sendToServer(new SetShelterEntryLockPacket(false)); });
+            no.setSelected(!locked);
+            this.addRenderableWidget(no);
         }
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
