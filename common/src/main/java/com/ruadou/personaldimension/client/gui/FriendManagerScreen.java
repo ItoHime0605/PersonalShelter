@@ -83,17 +83,22 @@ public class FriendManagerScreen extends FriendBaseScreen {
             FriendView selectedFriend = friends.stream().filter(f -> f.id().equals(expandedGroupFor)).findFirst().orElse(null);
             if (selectedFriend != null) {
                 int selectedIndex = friends.indexOf(selectedFriend) - scrollOffset;
-                int dropdownY = listTop + Math.max(0, selectedIndex) * ROW_H + 21;
-                int n = 0;
-                for (GroupView g : groups) {
+                // Display the picker in the right-hand column without covering the UUID field.
+                // Long group lists are paged so the picker stays inside the friend-list area.
+                int pickerTop = listTop;
+                int pickerRows = Math.min(VISIBLE_ROWS, groups.size());
+                int pageStart = Math.max(0, Math.min(groups.size() - pickerRows,
+                    groups.indexOf(groups.stream().filter(g -> g.name().equals(selectedFriend.group()))
+                        .findFirst().orElse(groups.isEmpty() ? null : groups.get(0)))));
+                for (int n = 0; n < pickerRows; n++) {
+                    GroupView g = groups.get(pageStart + n);
                     final String groupName = g.name();
                     this.addRenderableWidget(new FlatButton(Component.literal(groupName),
-                        groupX, dropdownY + n * 19, GROUP_BTN_W, 18, b -> {
+                        groupX, pickerTop + n * ROW_H, GROUP_BTN_W, 20, b -> {
                             Platform.sendToServer(FriendConfigActionPacket.assignGroup(selectedFriend.id(), groupName));
                             expandedGroupFor = null;
                             rebuildWidgets();
                         }));
-                    n++;
                 }
             }
         }
