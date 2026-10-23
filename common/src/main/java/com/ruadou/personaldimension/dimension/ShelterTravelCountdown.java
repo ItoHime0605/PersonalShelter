@@ -34,7 +34,7 @@ public final class ShelterTravelCountdown {
     public static void tick(ServerPlayer player) {
         Pending p = PENDING.get(player.getUUID());
         if (p == null) return;
-        if (!player.isAlive() || !player.level().dimension().equals(p.dimension)
+        if (!player.isAlive() || player.hurtTime > 0 || !player.level().dimension().equals(p.dimension)
             || player.distanceToSqr(p.x, p.y, p.z) > 0.015625D || player.getHealth() < p.health) {
             cancel(player);
             player.displayClientMessage(Component.literal("移動或受到傷害，傳送已取消。"), true);
