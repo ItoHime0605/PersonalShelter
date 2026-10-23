@@ -552,7 +552,12 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     @Override
     protected void renderHeader(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (isVisitingFriendLand()) {
-            super.renderHeader(graphics, mouseX, mouseY, partialTick);
+            ModernStyle.fillRoundTop(graphics, this.leftPos + 1, this.topPos + 1,
+                PANEL_WIDTH - 2, HEADER_HEIGHT, ModernStyle.CHAMFER, ModernStyle.HEADER_BG);
+            graphics.fill(this.leftPos + 1, this.topPos + HEADER_HEIGHT,
+                this.leftPos + PANEL_WIDTH - 1, this.topPos + HEADER_HEIGHT + 1, ModernStyle.DIVIDER);
+            graphics.drawString(this.font, Component.literal("好友私人土地｜訪客資訊"),
+                this.leftPos + PADDING, this.topPos + 7, ModernStyle.TEXT, false);
             return;
         }
         // 标题栏底 + 分隔线（分隔线随后被选中标签盖住形成"融合"）
