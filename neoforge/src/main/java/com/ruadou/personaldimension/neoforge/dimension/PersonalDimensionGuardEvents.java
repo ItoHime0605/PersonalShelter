@@ -132,6 +132,7 @@ public final class PersonalDimensionGuardEvents {
     public static void onShelterPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         com.ruadou.personaldimension.dimension.ShelterTravelCountdown.tick(player);
+        LandRadioSync.tick(player);
         if (!(player.level() instanceof ServerLevel level)) return;
         if (ModDimensions.ownerOf(level.dimension()).isEmpty()) {
             // Restore the real server border after leaving a shelter. Never mutate it.
@@ -173,6 +174,7 @@ public final class PersonalDimensionGuardEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             com.ruadou.personaldimension.dimension.ShelterTravelCountdown.cancel(player);
             LAST_BORDER_STATE.remove(player.getUUID());
+            LandRadioSync.logout(player);
         }
     }
 
