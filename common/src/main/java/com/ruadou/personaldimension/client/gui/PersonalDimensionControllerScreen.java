@@ -419,7 +419,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             lastEntryLockState = locked;
             FlatButton entryLockToggle = new FlatButton(
                 Component.literal("進入點鎖定：" + (locked ? "是" : "否")),
-                x, firstY + 5 * (20 + PADDING), btnWidth, 20,
+                contentLeft(), firstY + 5 * (20 + PADDING), contentWidth(), 20,
                 button -> {
                     boolean currentLocked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
                         && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
@@ -431,7 +431,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         // 土地電台設定獨立於全服聊天及廣播；此頁僅讀取伺服器權威狀態。
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(Component.literal("私人土地電台"),
-                x, firstY + 6 * (20 + PADDING), btnWidth, 20,
+                contentLeft(), firstY + 6 * (20 + PADDING), contentWidth(), 20,
                 b -> openSettingsPage(SettingsPage.RADIO)));
         }
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
