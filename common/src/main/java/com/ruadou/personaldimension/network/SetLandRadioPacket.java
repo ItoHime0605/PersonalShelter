@@ -3,6 +3,7 @@ package com.ruadou.personaldimension.network;
 import com.ruadou.personaldimension.PersonalDimension;
 import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 import com.ruadou.personaldimension.platform.Platform;
+import com.ruadou.personaldimension.radio.DefaultRadioStations;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -32,7 +33,7 @@ public record SetLandRadioPacket(boolean enabled, String stationId) implements C
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         boolean custom = data.getRadioCustomStations().stream().anyMatch(s -> s.id().equals(stationId));
         // 預設頻道清單的 ID 由後續整合時在伺服器端驗證。
-        if (enabled && !custom) return;
+        if (enabled && !custom && !DefaultRadioStations.contains(stationId)) return;
         data.updateRadio(enabled, stationId, data.getRadioCustomStations());
         Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId()));
     }
