@@ -44,6 +44,8 @@ public final class Config {
     private static final ModConfigSpec.Builder CLIENT_BUILDER = new ModConfigSpec.Builder();
     private static final ModConfigSpec.Builder SERVER_BUILDER = new ModConfigSpec.Builder();
 
+    public static final ModConfigSpec.BooleanValue PRIVATE_LAND_RADIO_ENABLED;
+    public static final ModConfigSpec.IntValue RADIO_DEFAULT_VOLUME;
     public static final ModConfigSpec.EnumValue<BlockListMode> BLOCK_LIST_MODE;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> BLOCK_LIST;
 
@@ -53,6 +55,18 @@ public final class Config {
     private static final Map<Permission, ModConfigSpec.BooleanValue> PERM_DEFAULT_ON = new LinkedHashMap<>();
 
     static {
+        // This is a feature gate, not a global broadcast switch. Each land owns its station.
+        COMMON_BUILDER.push("private_land_radio");
+        PRIVATE_LAND_RADIO_ENABLED = COMMON_BUILDER
+                .comment("是否允許私人土地使用網路電台；預設關閉。此項不是全服廣播。")
+                .define("enabled", false);
+        COMMON_BUILDER.pop();
+        CLIENT_BUILDER.push("private_land_radio");
+        RADIO_DEFAULT_VOLUME = CLIENT_BUILDER
+                .comment("本機私人土地電台預設音量，0 至 100；不影響其他玩家。")
+                .defineInRange("defaultVolume", 50, 0, 100);
+        CLIENT_BUILDER.pop();
+
         COMMON_BUILDER.push("dimension_terrain");
         COMMON_BUILDER.push("block_config");
 
