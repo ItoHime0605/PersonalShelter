@@ -146,7 +146,9 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         // 打开即请求一次，避免首帧信息为空
         requestInfo();
         Platform.sendToServer(new RequestShelterNamePacket());
-        Platform.sendToServer(new RequestLandRadioPacket());
+        if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
+            Platform.sendToServer(new RequestLandRadioPacket());
+        }
     }
 
     private boolean isVisitingFriendLand() {
@@ -456,13 +458,15 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     /** Local, persistent color theme chooser. */
     private void addThemeSelection() {
-        int x = contentLeft() + 10;
+        int x = contentLeft() + PADDING;
         int y = contentTop() + PADDING + 38;
+        int themeGap = 6;
+        int themeWidth = (contentWidth() - 2 * PADDING - themeGap) / 2;
         String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色", "廢土風格", "異塵餘生風格", "魔法空間風格"};
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
             x, contentTop() + PADDING, 78, 16, b -> backToSettingsHome()));
         this.addRenderableWidget(new FlatButton(Component.literal("字體放大：" + (ModernStyle.largeText() ? "開" : "關")),
-            x + 110, contentTop() + PADDING, 102, 16, b -> {
+            x + themeWidth + themeGap, contentTop() + PADDING, themeWidth, 16, b -> {
                 ModernStyle.setLargeText(!ModernStyle.largeText());
                 rebuildWidgets();
             }));
@@ -470,7 +474,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             final int choice = i;
             int row = i / 2, col = i % 2;
             FlatButton button = new FlatButton(Component.literal(names[i]),
-                x + col * 110, y + row * 27, 102, 21, b -> {
+                x + col * (themeWidth + themeGap), y + row * 27, themeWidth, 21, b -> {
                     ModernStyle.applyTheme(choice);
                     rebuildWidgets();
                 });
@@ -508,6 +512,9 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private void openSettingsPage(SettingsPage page) {
         if (this.settingsPage != page) {
             this.settingsPage = page;
+            if (page == SettingsPage.RADIO) {
+                ClientLandRadioData.clear();
+            }
             this.rebuildWidgets();
         }
     }
