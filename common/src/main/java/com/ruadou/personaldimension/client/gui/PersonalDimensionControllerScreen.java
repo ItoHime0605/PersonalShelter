@@ -642,6 +642,16 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             } else {
                 ControllerInfoText.render(graphics, this.font, this.leftPos + PADDING, contentTop() + PADDING, contentWidth());
             }
+        } else if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
+            int x = contentLeft() + PADDING;
+            int y = contentTop() + PADDING + 72;
+            graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
+                x, y, ModernStyle.TEXT, false);
+            String id = ClientLandRadioData.stationId();
+            graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
+                x, y + 18, ModernStyle.TEXT_SUB, false);
+            graphics.drawString(this.font, Component.literal("音訊播放功能尚未啟用"),
+                x, y + 42, ModernStyle.TEXT_SUB, false);
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
             this.teleportPanel.render(graphics, mouseX, mouseY);
         }
