@@ -7,8 +7,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 
 /** 僅回傳玩家當前所在私人土地的電台狀態。 */
 public record RequestLandRadioPacket() implements CustomPacketPayload {
@@ -19,10 +17,10 @@ public record RequestLandRadioPacket() implements CustomPacketPayload {
     public void handle(ServerPlayer player) {
         var server = player.getServer();
         if (server == null) return;
-        ResourceKey<Level> current = player.level().dimension();
-        boolean privateLand = Platform.isPersonalDimension(current) && Platform.ownerOf(current).isPresent();
-        var level = server.getLevel(current);
-        if (level == null || !privateLand) {
+        // 控制器管理的是玩家自己的土地，即使玩家目前在主世界或朋友的土地。
+        var ownKey = Platform.levelKeyFor(player.getUUID());
+        var level = server.getLevel(ownKey);
+        if (level == null || !Platform.ownerOf(ownKey).filter(player.getUUID()::equals).isPresent()) {
             Platform.sendToPlayer(player, new LandRadioStatePacket(false, ""));
             return;
         }
