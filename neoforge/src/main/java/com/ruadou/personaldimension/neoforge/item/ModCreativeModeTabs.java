@@ -23,6 +23,7 @@ public class ModCreativeModeTabs {
             .displayItems((parameters, output)->{
                 output.accept(ModItems.PERSONAL_DIMENSION_GENERATOR);
                 output.accept(ModItems.PERSONAL_DIMENSION_CONTROLLER);
+                output.accept(ModBlocks.SHELTER_MANAGEMENT_TERMINAL_ITEM);
                 output.accept(ModItems.SHELTER_PERMIT_LV1);
                 output.accept(ModItems.SHELTER_PERMIT_LV2);
                 output.accept(ModItems.SHELTER_PERMIT_LV3);
