@@ -464,7 +464,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         int themeWidth = (contentWidth() - 2 * PADDING - themeGap) / 2;
         String[] names = {"預設", "白色", "Windows 藍", "粉紅色", "草綠色", "淺藍色", "黑色", "廢土風格", "異塵餘生風格", "魔法空間風格"};
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
-            x, contentTop() + PADDING, 78, 16, b -> backToSettingsHome()));
+            x, contentTop() + PADDING, themeWidth, 16, b -> backToSettingsHome()));
         this.addRenderableWidget(new FlatButton(Component.literal("字體放大：" + (ModernStyle.largeText() ? "開" : "關")),
             x + themeWidth + themeGap, contentTop() + PADDING, themeWidth, 16, b -> {
                 ModernStyle.setLargeText(!ModernStyle.largeText());
