@@ -61,6 +61,9 @@ public class PersonalDimensionData extends SavedData {
     private static final String TAG_SHELTER_ENTRY = "ShelterEntry";
     private static final String TAG_SHELTER_NAME = "ShelterName";
     private String shelterName = "";
+    private boolean radioEnabled;
+    private String radioSelectedStationId = "";
+    private final java.util.List<com.ruadou.personaldimension.radio.LandRadioSettings.Station> radioCustomStations = new java.util.ArrayList<>();
     private int shelterLevel = 0;
     private net.minecraft.core.BlockPos shelterEntry;
     private boolean shelterEntryLocked;
@@ -92,6 +95,18 @@ public class PersonalDimensionData extends SavedData {
         data.shelterEntryYaw = tag.getFloat("ShelterEntryYaw");
         data.shelterEntryPitch = tag.getFloat("ShelterEntryPitch");
         data.shelterName = tag.getString(TAG_SHELTER_NAME);
+        data.radioEnabled = tag.getBoolean("RadioEnabled");
+        data.radioSelectedStationId = tag.getString("RadioStationId");
+        net.minecraft.nbt.ListTag stations = tag.getList("RadioCustomStations", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < Math.min(stations.size(), com.ruadou.personaldimension.radio.LandRadioSettings.MAX_STATIONS); i++) {
+            CompoundTag station = stations.getCompound(i);
+            try {
+                data.radioCustomStations.add(new com.ruadou.personaldimension.radio.LandRadioSettings.Station(
+                        station.getString("Id"), station.getString("Name"), station.getString("Url")));
+            } catch (IllegalArgumentException | NullPointerException ignored) {
+                // 略過舊存檔中格式不正確的電台，不阻止土地載入。
+            }
+        }
         if (tag.contains(TAG_SHELTER_ENTRY, 10)) {
             CompoundTag entry = tag.getCompound(TAG_SHELTER_ENTRY);
             data.shelterEntry = new net.minecraft.core.BlockPos(entry.getInt("X"), entry.getInt("Y"), entry.getInt("Z"));
@@ -119,6 +134,17 @@ public class PersonalDimensionData extends SavedData {
         tag.putFloat("ShelterEntryYaw", shelterEntryYaw);
         tag.putFloat("ShelterEntryPitch", shelterEntryPitch);
         tag.putString(TAG_SHELTER_NAME, shelterName);
+        tag.putBoolean("RadioEnabled", radioEnabled);
+        tag.putString("RadioStationId", radioSelectedStationId);
+        net.minecraft.nbt.ListTag stations = new net.minecraft.nbt.ListTag();
+        for (com.ruadou.personaldimension.radio.LandRadioSettings.Station station : radioCustomStations) {
+            CompoundTag item = new CompoundTag();
+            item.putString("Id", station.id());
+            item.putString("Name", station.name());
+            item.putString("Url", station.streamUrl());
+            stations.add(item);
+        }
+        tag.put("RadioCustomStations", stations);
         if (shelterEntry != null) {
             CompoundTag entry = new CompoundTag();
             entry.putInt("X", shelterEntry.getX());
@@ -127,6 +153,26 @@ public class PersonalDimensionData extends SavedData {
             tag.put(TAG_SHELTER_ENTRY, entry);
         }
         return tag;
+    }
+
+    /** 每塊土地的電台設定獨立儲存在該維度存檔內，預設關閉。 */
+    public boolean isRadioEnabled() { return radioEnabled; }
+    public String getRadioSelectedStationId() { return radioSelectedStationId; }
+    public java.util.List<com.ruadou.personaldimension.radio.LandRadioSettings.Station> getRadioCustomStations() {
+        return java.util.List.copyOf(radioCustomStations);
+    }
+    /** 呼叫端必須先確認操作者是土地擁有者。 */
+    public void updateRadio(boolean enabled, String selectedStationId,
+            java.util.List<com.ruadou.personaldimension.radio.LandRadioSettings.Station> stations) {
+        if (stations == null || stations.size() > com.ruadou.personaldimension.radio.LandRadioSettings.MAX_STATIONS)
+            throw new IllegalArgumentException("自訂電台數量超過限制");
+        if (selectedStationId == null || selectedStationId.length() > 80)
+            throw new IllegalArgumentException("電台識別碼無效");
+        radioEnabled = enabled;
+        radioSelectedStationId = selectedStationId;
+        radioCustomStations.clear();
+        radioCustomStations.addAll(stations);
+        setDirty();
     }
 
     public String getShelterName() { return shelterName; }
