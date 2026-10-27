@@ -28,12 +28,13 @@ public record SetLandRadioPacket(boolean enabled, String stationId) implements C
         if (server == null) return;
         // 永遠由伺服器端的玩家 UUID 決定可修改的土地。
         var level = server.getLevel(Platform.levelKeyFor(player.getUUID()));
-        if (level == null) return;
+        if (level == null || !Platform.ownerOf(level.dimension()).filter(player.getUUID()::equals).isPresent()) return;
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         boolean custom = data.getRadioCustomStations().stream().anyMatch(s -> s.id().equals(stationId));
         // 預設頻道清單的 ID 由後續整合時在伺服器端驗證。
         if (enabled && !custom) return;
         data.updateRadio(enabled, stationId, data.getRadioCustomStations());
+        Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId()));
     }
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
