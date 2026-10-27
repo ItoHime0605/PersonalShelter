@@ -412,16 +412,16 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             boolean locked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
                 && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
             lastEntryLockState = locked;
-            FlatButton yes = new FlatButton(Component.literal("鎖定：是 " + (locked ? "●" : "○")),
-                x, firstY + 5 * (20 + PADDING), 72, 20,
-                b -> { Platform.sendToServer(new SetShelterEntryLockPacket(true)); });
-            yes.setSelected(locked);
-            this.addRenderableWidget(yes);
-            FlatButton no = new FlatButton(Component.literal("否 " + (!locked ? "●" : "○")),
-                x + 74, firstY + 5 * (20 + PADDING), 72, 20,
-                b -> { Platform.sendToServer(new SetShelterEntryLockPacket(false)); });
-            no.setSelected(!locked);
-            this.addRenderableWidget(no);
+            FlatButton entryLockToggle = new FlatButton(
+                Component.literal("進入點鎖定：" + (locked ? "是" : "否")),
+                x, firstY + 5 * (20 + PADDING), btnWidth, 20,
+                button -> {
+                    boolean currentLocked = com.ruadou.personaldimension.client.ClientDimensionInfo.info() != null
+                        && com.ruadou.personaldimension.client.ClientDimensionInfo.info().shelterEntryLocked();
+                    Platform.sendToServer(new SetShelterEntryLockPacket(!currentLocked));
+                });
+            entryLockToggle.setSelected(locked);
+            this.addRenderableWidget(entryLockToggle);
         }
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
