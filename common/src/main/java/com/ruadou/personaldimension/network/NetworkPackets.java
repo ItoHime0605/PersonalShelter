@@ -20,6 +20,7 @@ public final class NetworkPackets {
         new PacketEntry(DimensionInfoPacket.TYPE, DimensionInfoPacket.STREAM_CODEC),
         new PacketEntry(ShelterNamePacket.TYPE, ShelterNamePacket.STREAM_CODEC),
         new PacketEntry(LandRadioStatePacket.TYPE, LandRadioStatePacket.STREAM_CODEC),
+        new PacketEntry(CurrentLandRadioPacket.TYPE, CurrentLandRadioPacket.STREAM_CODEC),
         new PacketEntry(FriendDataPacket.TYPE, FriendDataPacket.STREAM_CODEC),
         new PacketEntry(OnlinePlayersPacket.TYPE, OnlinePlayersPacket.STREAM_CODEC),
         new PacketEntry(VisitListPacket.TYPE, VisitListPacket.STREAM_CODEC),
