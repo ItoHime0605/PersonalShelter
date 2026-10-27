@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.ruadou.personaldimension.dimension.PersonalDimensionData;
-import com.ruadou.personaldimension.network.LandRadioStatePacket;
+import com.ruadou.personaldimension.network.CurrentLandRadioPacket;
 import com.ruadou.personaldimension.platform.Platform;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,7 +25,7 @@ public final class LandRadioSync {
         Snapshot next = current(player);
         Snapshot previous = LAST_SENT.put(player.getUUID(), next);
         if (!next.equals(previous)) {
-            Platform.sendToPlayer(player, new LandRadioStatePacket(next.enabled, next.stationId));
+            Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId));
         }
     }
 
