@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "description": "全服電台預設候選清單。source_url 是使用者提供的參考網址，不代表已驗證可播放的音訊串流；管理員應填入經驗證的 stream_url 後才允許播放。",
+  "stations": [
+    {
+      "id": "station_01",
+      "category": "台灣",
+      "name": "KISS Radio 網路音樂台",
+      "source_url": "http://kiss.com.tw",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_02",
+      "category": "台灣",
+      "name": "飛碟聯播網",
+      "source_url": "http://netwave.com.tw",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_03",
+      "category": "台灣",
+      "name": "i Radio 中廣音樂網",
+      "source_url": "http://netwave.com.tw",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_04",
+      "category": "台灣",
+      "name": "中廣流行網",
+      "source_url": "http://netwave.com.tw",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_05",
+      "category": "日本",
+      "name": "Big B Radio - JPOP Channel",
+      "source_url": "http://jpop128.bigbradio.net",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_06",
+      "category": "日本",
+      "name": "JMusicAnime Radio",
+      "source_url": "https://zeno.fm",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_07",
+      "category": "日本",
+      "name": "Vocaloid Radio",
+      "source_url": "http://vocaloidradio.com",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_08",
+      "category": "日本",
+      "name": "Touhou & Doujin Music Radio (ARS Radio)",
+      "source_url": "https://animers.org",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_09",
+      "category": "美國",
+      "name": "Radio Paradise (Main Mix)",
+      "source_url": "https://radioparadise.com",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_10",
+      "category": "美國",
+      "name": "Hot 108 Jamz",
+      "source_url": "http://hot108.com",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_11",
+      "category": "美國",
+      "name": "181.FM - Awesome 80's",
+      "source_url": "http://181fm.com",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    },
+    {
+      "id": "station_12",
+      "category": "美國",
+      "name": "181.FM - Power 181",
+      "source_url": "http://181fm.com",
+      "stream_url": "",
+      "enabled": false,
+      "verification": "待確認音訊串流網址"
+    }
+  ]
+}
