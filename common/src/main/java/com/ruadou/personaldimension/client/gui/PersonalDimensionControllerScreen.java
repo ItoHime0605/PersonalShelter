@@ -9,6 +9,8 @@ import com.ruadou.personaldimension.network.ReturnToOwnShelterPacket;
 import com.ruadou.personaldimension.network.PublicDimensionPacket;
 import com.ruadou.personaldimension.network.RequestDimensionInfoPacket;
 import com.ruadou.personaldimension.network.RequestShelterNamePacket;
+import com.ruadou.personaldimension.network.RequestLandRadioPacket;
+import com.ruadou.personaldimension.client.ClientLandRadioData;
 import com.ruadou.personaldimension.network.SetShelterNamePacket;
 import com.ruadou.personaldimension.client.ClientShelterName;
 import net.minecraft.client.gui.components.EditBox;
@@ -59,7 +61,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     /** 设置页内的二级子页。 */
     private enum SettingsPage {
-        HOME, TIME, WEATHER, MOON_PHASE, THEME
+        HOME, TIME, WEATHER, MOON_PHASE, THEME, RADIO
     }
 
     /** 删除确认的目标：个人维度或公共维度（决定确认文案与下发包）。 */
@@ -121,8 +123,10 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             } else if (this.settingsPage == SettingsPage.MOON_PHASE) {
                 this.activePanel = new MoonPhaseSubPanel(this);
                 this.activePanel.build();
-            } else {
+            } else if (this.settingsPage == SettingsPage.THEME) {
                 addThemeSelection();
+            } else {
+                addRadioSettings();
             }
         } else if (this.activeTab == Tab.FRIENDS) {
             // 好友页：好友管理 / 访问维度两个入口
@@ -142,6 +146,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         // 打开即请求一次，避免首帧信息为空
         requestInfo();
         Platform.sendToServer(new RequestShelterNamePacket());
+        Platform.sendToServer(new RequestLandRadioPacket());
     }
 
     private boolean isVisitingFriendLand() {
@@ -423,6 +428,12 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             entryLockToggle.setSelected(locked);
             this.addRenderableWidget(entryLockToggle);
         }
+        // 土地電台設定獨立於全服聊天及廣播；此頁僅讀取伺服器權威狀態。
+        if (ownDimensionExists()) {
+            this.addRenderableWidget(new FlatButton(Component.literal("私人土地電台"),
+                x, firstY + 6 * (20 + PADDING), btnWidth, 20,
+                b -> openSettingsPage(SettingsPage.RADIO)));
+        }
         // 生物生成控制需读写本人维度的规则存储，维度未创建时不提供入口
         if (ownDimensionExists()) {
             this.addRenderableWidget(new FlatButton(
@@ -430,6 +441,17 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                     x, firstY + 4 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
         }
+    }
+
+    /** 電台資訊頁：未完成串流播放與選台驗證前不顯示無效的操作按鈕。 */
+    private void addRadioSettings() {
+        int x = contentLeft() + PADDING;
+        int y = contentTop() + PADDING;
+        this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
+            x, y, 88, 20, b -> backToSettingsHome()));
+        this.addRenderableWidget(new FlatButton(Component.literal("重新整理電台狀態"),
+            x, y + 34, contentWidth() - 2 * PADDING, 20,
+            b -> Platform.sendToServer(new RequestLandRadioPacket())));
     }
 
     /** Local, persistent color theme chooser. */
