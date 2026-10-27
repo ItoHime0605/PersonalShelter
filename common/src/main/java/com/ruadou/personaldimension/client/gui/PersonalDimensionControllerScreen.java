@@ -10,6 +10,8 @@ import com.ruadou.personaldimension.network.PublicDimensionPacket;
 import com.ruadou.personaldimension.network.RequestDimensionInfoPacket;
 import com.ruadou.personaldimension.network.RequestShelterNamePacket;
 import com.ruadou.personaldimension.network.RequestLandRadioPacket;
+import com.ruadou.personaldimension.network.SetLandRadioPacket;
+import com.ruadou.personaldimension.radio.DefaultRadioStations;
 import com.ruadou.personaldimension.client.ClientLandRadioData;
 import com.ruadou.personaldimension.network.SetShelterNamePacket;
 import com.ruadou.personaldimension.client.ClientShelterName;
@@ -73,6 +75,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private SettingsPage settingsPage = SettingsPage.HOME;
     private int refreshCounter;
     private Boolean lastEntryLockState;
+    private int radioPage;
 
     private Button travelButton;
     private boolean renaming;
@@ -445,15 +448,42 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         }
     }
 
-    /** 電台資訊頁：未完成串流播放與選台驗證前不顯示無效的操作按鈕。 */
+    /** 內建電台分頁選擇；伺服器端再次驗證頻道 ID 與土地擁有者。 */
     private void addRadioSettings() {
         int x = contentLeft() + PADDING;
         int y = contentTop() + PADDING;
+        int width = contentWidth() - 2 * PADDING;
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
             x, y, 88, 20, b -> backToSettingsHome()));
-        this.addRenderableWidget(new FlatButton(Component.literal("重新整理電台狀態"),
-            x, y + 34, contentWidth() - 2 * PADDING, 20,
+        this.addRenderableWidget(new FlatButton(Component.literal("重新整理"),
+            x + width - 88, y, 88, 20,
             b -> Platform.sendToServer(new RequestLandRadioPacket())));
+        this.addRenderableWidget(new FlatButton(Component.literal("關閉土地電台"),
+            x, y + 28, width, 20, b -> {
+                Platform.sendToServer(new SetLandRadioPacket(false, ClientLandRadioData.stationId()));
+            }));
+        int pageSize = 3;
+        int pageCount = (DefaultRadioStations.ENTRIES.size() + pageSize - 1) / pageSize;
+        radioPage = Math.max(0, Math.min(radioPage, pageCount - 1));
+        for (int i = radioPage * pageSize; i < Math.min((radioPage + 1) * pageSize, DefaultRadioStations.ENTRIES.size()); i++) {
+            var station = DefaultRadioStations.ENTRIES.get(i);
+            int row = i % pageSize;
+            FlatButton button = new FlatButton(Component.literal(station.name()),
+                x, y + 56 + row * 24, width, 20, b -> {
+                    Platform.sendToServer(new SetLandRadioPacket(true, station.id()));
+                });
+            button.setSelected(station.id().equals(ClientLandRadioData.stationId()));
+            this.addRenderableWidget(button);
+        }
+        int half = (width - 6) / 2;
+        FlatButton previous = new FlatButton(Component.literal("上一頁"),
+            x, y + 134, half, 20, b -> { radioPage--; rebuildWidgets(); });
+        previous.active = radioPage > 0;
+        this.addRenderableWidget(previous);
+        FlatButton next = new FlatButton(Component.literal("下一頁"),
+            x + half + 6, y + 134, half, 20, b -> { radioPage++; rebuildWidgets(); });
+        next.active = radioPage + 1 < pageCount;
+        this.addRenderableWidget(next);
     }
 
     /** Local, persistent color theme chooser. */
@@ -651,14 +681,14 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             }
         } else if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
             int x = contentLeft() + PADDING;
-            int y = contentTop() + PADDING + 72;
+            int y = contentTop() + PADDING + 163;
             graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
                 x, y, ModernStyle.TEXT, false);
             String id = ClientLandRadioData.stationId();
             graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
                 x, y + 18, ModernStyle.TEXT_SUB, false);
             graphics.drawString(this.font, Component.literal("音訊播放功能尚未啟用"),
-                x, y + 42, ModernStyle.TEXT_SUB, false);
+                x, y + 30, ModernStyle.TEXT_SUB, false);
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
             this.teleportPanel.render(graphics, mouseX, mouseY);
         }
