@@ -12,7 +12,7 @@ import java.util.Objects;
  */
 public final class LandRadioSettings {
     public static final int MAX_STATIONS = 32;
-    public static final int MAX_NAME_LENGTH = 48;
+    public static final int MAX_NAME_LENGTH = 256;
     public static final int MAX_URL_LENGTH = 1024;
 
     private boolean enabled;
