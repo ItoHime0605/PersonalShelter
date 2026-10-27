@@ -20,10 +20,7 @@ public record RequestLandRadioPacket() implements CustomPacketPayload {
         var server = player.getServer();
         if (server == null) return;
         ResourceKey<Level> current = player.level().dimension();
-        // 不可僅依命名空間判斷：必須確認此維度確實對應玩家私人土地的 UUID。
-        boolean privateLand = current.location().getNamespace().equals(PersonalDimension.MODID)
-                && server.getPlayerList().getPlayers().stream().map(p -> p.getUUID())
-                    .anyMatch(id -> current.equals(Platform.levelKeyFor(id)));
+        boolean privateLand = Platform.isPersonalDimension(current) && Platform.ownerOf(current).isPresent();
         var level = server.getLevel(current);
         if (level == null || !privateLand) {
             Platform.sendToPlayer(player, new LandRadioStatePacket(false, ""));
