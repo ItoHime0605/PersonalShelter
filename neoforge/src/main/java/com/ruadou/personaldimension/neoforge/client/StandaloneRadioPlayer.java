@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Locale;
 
 /** Independent MP3 radio engine; network and decoding never run on the game thread. */
 public final class StandaloneRadioPlayer {
@@ -64,6 +65,11 @@ public final class StandaloneRadioPlayer {
             String url = RadioPlaylistResolver.resolve(session.url);
             if (session.closed.get()) return;
             URI uri = URI.create(url);
+            String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
+            if (path.endsWith(".ogg") || path.endsWith(".opus") || path.endsWith(".aac")
+                    || path.endsWith(".m4a") || path.endsWith(".mp4")) {
+                throw new IllegalArgumentException("This radio engine currently supports MP3 streams only");
+            }
             HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
             session.connection = conn;
             conn.setConnectTimeout(5000);
@@ -72,6 +78,14 @@ public final class StandaloneRadioPlayer {
             conn.setRequestProperty("Icy-MetaData", "0");
             conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
             if (conn.getResponseCode() != 200) throw new IllegalStateException("Radio HTTP " + conn.getResponseCode());
+            String contentType = conn.getContentType();
+            if (contentType != null) {
+                String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
+                if (type.contains("ogg") || type.contains("aac") || type.contains("mp4")
+                        || type.contains("opus")) {
+                    throw new IllegalArgumentException("Unsupported radio stream format: " + type);
+                }
+            }
             try (InputStream input = new BufferedInputStream(conn.getInputStream())) {
                 session.input = input;
                 Bitstream stream = new Bitstream(input);
