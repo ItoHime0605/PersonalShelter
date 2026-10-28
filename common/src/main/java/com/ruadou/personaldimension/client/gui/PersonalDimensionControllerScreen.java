@@ -13,6 +13,7 @@ import com.ruadou.personaldimension.network.RequestLandRadioPacket;
 import com.ruadou.personaldimension.network.SetLandRadioPacket;
 import com.ruadou.personaldimension.radio.DefaultRadioStations;
 import com.ruadou.personaldimension.client.ClientLandRadioData;
+import com.ruadou.personaldimension.client.ClientRadioVolume;
 import com.ruadou.personaldimension.network.SetShelterNamePacket;
 import com.ruadou.personaldimension.client.ClientShelterName;
 import net.minecraft.client.gui.components.EditBox;
@@ -484,6 +485,16 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             x + half + 6, y + 134, half, 20, b -> { radioPage++; rebuildWidgets(); });
         next.active = radioPage + 1 < pageCount;
         this.addRenderableWidget(next);
+        int volumeY = y + 159;
+        int adjustWidth = 42;
+        this.addRenderableWidget(new FlatButton(Component.literal("－"),
+            x, volumeY, adjustWidth, 18, b -> { ClientRadioVolume.set(ClientRadioVolume.get() - 1); rebuildWidgets(); }));
+        this.addRenderableWidget(new FlatButton(Component.literal("音量 " + ClientRadioVolume.get() + "%"),
+            x + adjustWidth + 4, volumeY, width - 2 * adjustWidth - 8, 18,
+            b -> { ClientRadioVolume.set(50); rebuildWidgets(); }));
+        this.addRenderableWidget(new FlatButton(Component.literal("＋"),
+            x + width - adjustWidth, volumeY, adjustWidth, 18,
+            b -> { ClientRadioVolume.set(ClientRadioVolume.get() + 1); rebuildWidgets(); }));
     }
 
     /** Local, persistent color theme chooser. */
@@ -681,14 +692,14 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             }
         } else if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
             int x = contentLeft() + PADDING;
-            int y = contentTop() + PADDING + 163;
+            int y = contentTop() + PADDING + 184;
             graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
                 x, y, ModernStyle.TEXT, false);
             String id = ClientLandRadioData.stationId();
             graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
                 x, y + 18, ModernStyle.TEXT_SUB, false);
             graphics.drawString(this.font, Component.literal("音訊播放功能尚未啟用"),
-                x, y + 30, ModernStyle.TEXT_SUB, false);
+                x, y + 24, ModernStyle.TEXT_SUB, false);
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
             this.teleportPanel.render(graphics, mouseX, mouseY);
         }
