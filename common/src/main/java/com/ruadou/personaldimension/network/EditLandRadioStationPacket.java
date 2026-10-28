@@ -27,6 +27,8 @@ public record EditLandRadioStationPacket(String action, String stationId, String
 
     public void handle(ServerPlayer player) {
         if (!action.equals("add") && !action.equals("edit") && !action.equals("delete")) return;
+        if (action.equals("add") && !stationId.isEmpty()) return;
+        if (!action.equals("add") && !stationId.matches("[a-zA-Z0-9_-]{1,80}")) return;
         if (name.length() > LandRadioSettings.MAX_NAME_LENGTH
                 || streamUrl.length() > LandRadioSettings.MAX_URL_LENGTH
                 || stationId.length() > 80) return;
