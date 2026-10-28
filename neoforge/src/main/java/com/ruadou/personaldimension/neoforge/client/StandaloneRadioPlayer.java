@@ -103,7 +103,7 @@ public final class StandaloneRadioPlayer {
                 }
             }
         } catch (Exception ex) {
-            // Do not flood the client log with a failed stream every tick.
+            // Failed streams retry after a delay; do not flood the client log.
         } finally {
             session.close();
             synchronized (LOCK) {
@@ -130,9 +130,9 @@ public final class StandaloneRadioPlayer {
             if (connection != null) connection.disconnect();
             SourceDataLine audio = line;
             if (audio != null) {
-                audio.stop();
-                audio.flush();
-                audio.close();
+                try { audio.stop(); } catch (Exception ignored) {}
+                try { audio.flush(); } catch (Exception ignored) {}
+                try { audio.close(); } catch (Exception ignored) {}
             }
         }
     }
