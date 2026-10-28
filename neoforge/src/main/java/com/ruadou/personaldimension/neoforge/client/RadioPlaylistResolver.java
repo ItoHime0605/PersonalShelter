@@ -26,6 +26,15 @@ public final class RadioPlaylistResolver {
         if (!path.endsWith(".m3u") && !path.endsWith(".m3u8") && !path.endsWith(".pls")) {
             return uri.toString();
         }
+        // Never fetch loopback, site-local or private network playlist hosts.
+        // This is a client-side safety check; redirects are disabled below.
+        String host = uri.getHost().toLowerCase(Locale.ROOT);
+        if (host.equals("localhost") || host.endsWith(".localhost") || host.endsWith(".local")
+                || host.equals("0.0.0.0") || host.equals("127.0.0.1") || host.startsWith("127.")
+                || host.startsWith("10.") || host.startsWith("192.168.") || host.startsWith("169.254.")
+                || host.equals("::1") || host.equals("[::1]")) {
+            throw new IOException("Local radio playlist hosts are not allowed");
+        }
         HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
         connection.setConnectTimeout(TIMEOUT_MS);
         connection.setReadTimeout(TIMEOUT_MS);
