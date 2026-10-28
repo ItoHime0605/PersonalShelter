@@ -58,8 +58,8 @@ public final class Config {
         // This is a feature gate, not a global broadcast switch. Each land owns its station.
         COMMON_BUILDER.push("private_land_radio");
         PRIVATE_LAND_RADIO_ENABLED = COMMON_BUILDER
-                .comment("是否允許私人土地使用網路電台；預設關閉。此項不是全服廣播。")
-                .define("enabled", false);
+                .comment("是否允許私人土地使用網路電台；預設開啟，管理員可關閉。此項不是全服廣播。")
+                .define("enabled", true);
         COMMON_BUILDER.pop();
         CLIENT_BUILDER.push("private_land_radio");
         RADIO_DEFAULT_VOLUME = CLIENT_BUILDER
