@@ -35,7 +35,7 @@ public record SetLandRadioPacket(boolean enabled, String stationId) implements C
         // 只接受伺服器認得的預設或自訂電台識別碼。
         if (enabled && !custom && !DefaultRadioStations.contains(stationId)) return;
         data.updateRadio(enabled, stationId, data.getRadioCustomStations());
-        Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId()));
+        Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId(), data.getRadioCustomStations()));
     }
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }

@@ -653,8 +653,6 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     @Override
     public void tick() {
         super.tick();
-        if (radioNameInput != null) radioNameInput.tick();
-        if (radioUrlInput != null) radioUrlInput.tick();
         if (!radioEditingId.isBlank() && !radioEditingId.equals("new")) {
             // 編輯期間保留輸入框，避免遠端同步刷新時遺失正在輸入的文字。
         } else if (activeTab == Tab.SETTINGS && settingsPage == SettingsPage.RADIO
