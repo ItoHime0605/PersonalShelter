@@ -504,7 +504,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 x, y + 127, width, 20, b -> {
             String name = radioNameInput.getValue().trim();
             String url = radioUrlInput.getValue().trim();
-            if (name.isEmpty() || !LandRadioSettings.isValidStreamUrl(url)) {
+            if (name.isEmpty() || name.length() > LandRadioSettings.MAX_NAME_LENGTH
+                    || !LandRadioSettings.isValidStreamUrl(url)) {
                 radioEditorError = "請輸入有效的電台名稱與 HTTP／HTTPS 串流網址";
                 return;
             }
