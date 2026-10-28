@@ -19,9 +19,9 @@ public final class ClientRadioLifecycle {
         if (wasInWorld && !inWorld) {
             ClientCurrentLandRadio.clear();
             ClientLandRadioData.clear();
-            OpenFmRadioBridge.stop();
+            StandaloneRadioPlayer.stop();
         }
         wasInWorld = inWorld;
-        OpenFmRadioBridge.clientTick();
+        StandaloneRadioPlayer.tick();
     }
 }
