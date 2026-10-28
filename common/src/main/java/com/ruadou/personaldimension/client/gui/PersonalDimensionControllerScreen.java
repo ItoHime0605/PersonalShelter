@@ -532,7 +532,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         this.addRenderableWidget(new FlatButton(Component.literal("關閉土地電台"),
                 x, y + 25, width, 20,
                 b -> Platform.sendToServer(new SetLandRadioPacket(false, ClientLandRadioData.stationId()))));
-        this.addRenderableWidget(new FlatButton(Component.literal(radioCustomPage ? "自訂電台" : "內建電台"),
+        this.addRenderableWidget(new FlatButton(Component.literal("內建電台"),
                 x, y + 49, half, 20, b -> { radioCustomPage = false; radioPage = 0; rebuildWidgets(); }));
         this.addRenderableWidget(new FlatButton(Component.literal("管理自訂電台"),
                 x + half + 6, y + 49, half, 20,
