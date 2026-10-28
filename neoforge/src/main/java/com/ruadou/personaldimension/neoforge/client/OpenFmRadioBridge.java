@@ -47,6 +47,11 @@ public final class OpenFmRadioBridge {
             stop();
             return;
         }
+        // 只允許播放目前維度的電台，跨土地時立刻停止舊串流。
+        if (!mc.level.dimension().location().toString().equals(ClientCurrentLandRadio.dimensionId())) {
+            stop();
+            return;
+        }
         String url = ClientCurrentLandRadio.streamUrl();
         try {
             if (player == null || !url.equals(playingUrl)) {
