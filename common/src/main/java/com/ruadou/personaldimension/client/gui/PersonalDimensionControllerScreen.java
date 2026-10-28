@@ -511,7 +511,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             }
             radioEditorError = "";
             Platform.sendToServer(new EditLandRadioStationPacket(
-                    editing == null ? "add" : "edit", radioEditingId, name, url));
+                    editing == null ? "add" : "edit", editing == null ? "" : radioEditingId, name, url));
             radioEditingId = "";
             rebuildWidgets();
         }));
