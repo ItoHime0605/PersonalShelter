@@ -4,6 +4,7 @@ import com.ruadou.personaldimension.PersonalDimension;
 import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 import com.ruadou.personaldimension.platform.Platform;
 import com.ruadou.personaldimension.radio.DefaultRadioStations;
+import com.ruadou.personaldimension.neoforge.Config;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -25,6 +26,7 @@ public record SetLandRadioPacket(boolean enabled, String stationId) implements C
 
     public void handle(ServerPlayer player) {
         if (stationId == null || !stationId.matches("[a-zA-Z0-9_-]{0,80}")) return;
+        if (enabled && !Config.PRIVATE_LAND_RADIO_ENABLED.get()) return;
         var server = player.getServer();
         if (server == null) return;
         // 永遠由伺服器端的玩家 UUID 決定可修改的土地。
