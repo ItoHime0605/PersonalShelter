@@ -21,11 +21,11 @@ public record RequestLandRadioPacket() implements CustomPacketPayload {
         var ownKey = Platform.levelKeyFor(player.getUUID());
         var level = server.getLevel(ownKey);
         if (level == null || !Platform.ownerOf(ownKey).filter(player.getUUID()::equals).isPresent()) {
-            Platform.sendToPlayer(player, new LandRadioStatePacket(false, ""));
+            Platform.sendToPlayer(player, new LandRadioStatePacket(false, "", java.util.List.of()));
             return;
         }
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
-        Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId()));
+        Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId(), data.getRadioCustomStations()));
     }
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }
