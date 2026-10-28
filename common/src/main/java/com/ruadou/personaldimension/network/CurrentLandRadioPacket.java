@@ -9,14 +9,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** 玩家目前所在土地的電台廣播狀態，非全服廣播。 */
-public record CurrentLandRadioPacket(boolean enabled, String stationId, String streamUrl) implements CustomPacketPayload {
+public record CurrentLandRadioPacket(boolean enabled, String stationId, String streamUrl, String dimensionId) implements CustomPacketPayload {
     public static final Type<CurrentLandRadioPacket> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(PersonalDimension.MODID, "current_land_radio"));
     public static final StreamCodec<ByteBuf, CurrentLandRadioPacket> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BOOL, CurrentLandRadioPacket::enabled,
             ByteBufCodecs.STRING_UTF8, CurrentLandRadioPacket::stationId,
             ByteBufCodecs.STRING_UTF8, CurrentLandRadioPacket::streamUrl,
+            ByteBufCodecs.STRING_UTF8, CurrentLandRadioPacket::dimensionId,
             CurrentLandRadioPacket::new);
-    public void handle() { ClientCurrentLandRadio.update(enabled, stationId, streamUrl); }
+    public void handle() { ClientCurrentLandRadio.update(enabled, stationId, streamUrl, dimensionId); }
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }
