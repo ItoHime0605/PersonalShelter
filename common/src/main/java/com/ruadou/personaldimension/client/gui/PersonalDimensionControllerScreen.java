@@ -86,6 +86,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private EditBox radioNameInput;
     private EditBox radioUrlInput;
     private long lastRadioRevision = -1;
+    private String radioEditorError = "";
 
     private Button travelButton;
     private boolean renaming;
@@ -486,7 +487,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         int x = contentLeft() + PADDING, y = contentTop() + PADDING;
         int width = contentWidth() - 2 * PADDING;
         this.addRenderableWidget(new FlatButton(Component.literal("返回電台清單"),
-                x, y, width, 20, b -> { radioEditingId = ""; rebuildWidgets(); }));
+                x, y, width, 20, b -> { radioEditingId = ""; radioEditorError = ""; rebuildWidgets(); }));
         var editing = ClientLandRadioData.customStations().stream()
                 .filter(st -> st.id().equals(radioEditingId)).findFirst().orElse(null);
         this.radioNameInput = new EditBox(this.font, x, y + 43, width, 20, Component.literal("電台名稱"));
@@ -503,7 +504,11 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 x, y + 127, width, 20, b -> {
             String name = radioNameInput.getValue().trim();
             String url = radioUrlInput.getValue().trim();
-            if (name.isEmpty() || !LandRadioSettings.isValidStreamUrl(url)) return;
+            if (name.isEmpty() || !LandRadioSettings.isValidStreamUrl(url)) {
+                radioEditorError = "請輸入有效的電台名稱與 HTTP／HTTPS 串流網址";
+                return;
+            }
+            radioEditorError = "";
             Platform.sendToServer(new EditLandRadioStationPacket(
                     editing == null ? "add" : "edit", radioEditingId, name, url));
             radioEditingId = "";
@@ -513,8 +518,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     /** 內建與自訂電台共用分頁，伺服器端再次驗證 ID 與地主身分。 */
     private void addRadioSettings() {
-        if (radioEditingId != null && (radioEditingId.equals("new")
-                || !radioEditingId.isBlank())) { addRadioEditor(); return; }
+        if (!radioEditingId.isBlank()) { addRadioEditor(); return; }
         int x = contentLeft() + PADDING;
         int y = contentTop() + PADDING;
         int width = contentWidth() - 2 * PADDING;
@@ -653,9 +657,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     @Override
     public void tick() {
         super.tick();
-        if (!radioEditingId.isBlank() && !radioEditingId.equals("new")) {
-            // 編輯期間保留輸入框，避免遠端同步刷新時遺失正在輸入的文字。
-        } else if (activeTab == Tab.SETTINGS && settingsPage == SettingsPage.RADIO
+        if (activeTab == Tab.SETTINGS && settingsPage == SettingsPage.RADIO
                 && lastRadioRevision != ClientLandRadioData.revision()) {
             lastRadioRevision = ClientLandRadioData.revision();
             if (radioNameInput == null) rebuildWidgets();
@@ -790,6 +792,15 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             }
         } else if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
             int x = contentLeft() + PADDING;
+            if (!radioEditingId.isBlank()) {
+                int y = contentTop() + PADDING;
+                graphics.drawString(this.font, Component.literal("電台名稱"), x, y + 30, ModernStyle.TEXT, false);
+                graphics.drawString(this.font, Component.literal("串流網址"), x, y + 80, ModernStyle.TEXT, false);
+                if (!radioEditorError.isEmpty()) {
+                    graphics.drawString(this.font, Component.literal("輸入內容無效，請檢查名稱與網址"), x, y + 157, ModernStyle.DANGER, false);
+                }
+                return;
+            }
             int y = contentTop() + PADDING + 211;
             graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
                 x, y, ModernStyle.TEXT, false);
