@@ -697,7 +697,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 x, y, ModernStyle.TEXT, false);
             String id = ClientLandRadioData.stationId();
             graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
-                x, y + 18, ModernStyle.TEXT_SUB, false);
+                x, y + 12, ModernStyle.TEXT_SUB, false);
             graphics.drawString(this.font, Component.literal("音訊播放功能尚未啟用"),
                 x, y + 24, ModernStyle.TEXT_SUB, false);
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
