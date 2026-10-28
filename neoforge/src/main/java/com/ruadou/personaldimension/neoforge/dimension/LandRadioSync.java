@@ -20,10 +20,12 @@ public final class LandRadioSync {
     private LandRadioSync() {}
 
     public static void tick(ServerPlayer player) {
-        // 每秒檢查一次；跨維度後最多一秒更新。
-        if (player.tickCount % 20 != 0) return;
+        // 維度切換時立即同步；同維度每秒檢查一次設定變更。
+        Snapshot previous = LAST_SENT.get(player.getUUID());
+        String dimension = player.level().dimension().location().toString();
+        if (previous != null && previous.dimension.equals(dimension) && player.tickCount % 20 != 0) return;
         Snapshot next = current(player);
-        Snapshot previous = LAST_SENT.put(player.getUUID(), next);
+        previous = LAST_SENT.put(player.getUUID(), next);
         if (!next.equals(previous)) {
             Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId));
         }
