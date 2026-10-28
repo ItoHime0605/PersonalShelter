@@ -70,9 +70,34 @@ public final class LandRadioSettings {
         try {
             URI uri = new URI(url);
             String scheme = uri.getScheme();
-            return ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
-                    && uri.getHost() != null && !uri.getHost().isBlank()
-                    && uri.getRawUserInfo() == null && uri.getFragment() == null;
+            if (!("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
+                    || uri.getHost() == null || uri.getHost().isBlank()
+                    || uri.getRawUserInfo() != null || uri.getFragment() != null
+                    || uri.getPort() == 0 || uri.getPort() > 65535) return false;
+            String host = uri.getHost().toLowerCase(java.util.Locale.ROOT);
+            if (host.equals("localhost") || host.endsWith(".localhost")
+                    || host.endsWith(".local") || host.endsWith(".internal")
+                    || host.endsWith(".test") || host.endsWith(".invalid")
+                    || host.equals("0") || host.contains(":")) return false;
+            if (host.matches("[0-9.]+")) {
+                String[] parts = host.split("\\.");
+                if (parts.length != 4) return false;
+                int[] octets = new int[4];
+                try {
+                    for (int i = 0; i < 4; i++) {
+                        octets[i] = Integer.parseInt(parts[i]);
+                        if (octets[i] > 255) return false;
+                    }
+                } catch (NumberFormatException exception) { return false; }
+                int first = octets[0], second = octets[1];
+                if (first == 0 || first == 10 || first == 127 || first >= 224
+                        || first == 169 && second == 254
+                        || first == 172 && second >= 16 && second <= 31
+                        || first == 192 && second == 168
+                        || first == 100 && second >= 64 && second <= 127
+                        || first == 198 && (second == 18 || second == 19)) return false;
+            }
+            return true;
         } catch (URISyntaxException exception) {
             return false;
         }
