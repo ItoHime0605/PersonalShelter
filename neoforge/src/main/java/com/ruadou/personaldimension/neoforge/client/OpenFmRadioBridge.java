@@ -20,6 +20,8 @@ public final class OpenFmRadioBridge {
     private static String playingUrl = "";
     private static boolean initialized;
     private static Constructor<?> constructor;
+    private static String failedUrl = "";
+    private static long retryAfterMillis;
 
     private OpenFmRadioBridge() {}
 
@@ -53,6 +55,12 @@ public final class OpenFmRadioBridge {
             return;
         }
         String url = ClientCurrentLandRadio.streamUrl();
+        if (url == null || url.isBlank()) {
+            stop();
+            return;
+        }
+        // 失敗的串流最多每十秒重試一次，避免每個遊戲刻重複建立播放器。
+        if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfterMillis) return;
         try {
             if (player == null || !url.equals(playingUrl)) {
                 stop();
@@ -62,8 +70,12 @@ public final class OpenFmRadioBridge {
             }
             setVolume.invoke(player, ClientRadioVolume.get());
             tick.invoke(player, mc.player.position());
+            failedUrl = "";
+            retryAfterMillis = 0L;
         } catch (ReflectiveOperationException | RuntimeException exception) {
             stop();
+            failedUrl = url;
+            retryAfterMillis = System.currentTimeMillis() + 10_000L;
         }
     }
 
