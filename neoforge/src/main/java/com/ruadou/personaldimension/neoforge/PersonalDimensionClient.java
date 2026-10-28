@@ -3,6 +3,8 @@ package com.ruadou.personaldimension.neoforge;
 import com.ruadou.personaldimension.client.gui.PersonalDimensionCreateScreen;
 import com.ruadou.personaldimension.neoforge.menu.ModMenus;
 import com.ruadou.personaldimension.neoforge.client.ShelterUpgradeScreen;
+import com.ruadou.personaldimension.neoforge.client.ClientRadioLifecycle;
+import net.neoforged.neoforge.common.NeoForge;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -19,6 +21,7 @@ public class PersonalDimensionClient {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         // 将本类注册到 MOD 总线，@SubscribeEvent 方法将按事件类型自动订阅
         container.getEventBus().register(this);
+        NeoForge.EVENT_BUS.register(ClientRadioLifecycle.class);
     }
 
     /**
