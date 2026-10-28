@@ -54,6 +54,7 @@ public final class RadioPlaylistResolver {
                     chars += line.length();
                     if (chars > MAX_CHARS) throw new IOException("Radio playlist too large");
                     line = line.trim();
+                    if (line.startsWith("#EXT-X-")) throw new IOException("HLS playlists are not supported by the radio decoder");
                     if (line.isEmpty() || line.startsWith("#") || line.startsWith(";")
                             || line.startsWith("[") || line.regionMatches(true, 0, "NumberOfEntries", 0, 15)
                             || line.regionMatches(true, 0, "Title", 0, 5)
