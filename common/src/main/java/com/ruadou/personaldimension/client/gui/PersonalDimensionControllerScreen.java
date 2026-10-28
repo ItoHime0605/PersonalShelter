@@ -14,6 +14,8 @@ import com.ruadou.personaldimension.network.SetLandRadioPacket;
 import com.ruadou.personaldimension.radio.DefaultRadioStations;
 import com.ruadou.personaldimension.client.ClientLandRadioData;
 import com.ruadou.personaldimension.client.ClientRadioVolume;
+import com.ruadou.personaldimension.client.ClientRadioListening;
+import com.ruadou.personaldimension.client.ClientCurrentLandRadio;
 import com.ruadou.personaldimension.network.SetShelterNamePacket;
 import com.ruadou.personaldimension.client.ClientShelterName;
 import net.minecraft.client.gui.components.EditBox;
@@ -165,10 +167,31 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     private void addVisitorButtons() {
         int x = this.leftPos + (PANEL_WIDTH - 174) / 2;
-        int y = contentTop() + 120;
-        this.addRenderableWidget(new FlatButton(Component.literal("退出好友土地"), x, y, 174, 22,
+        int y = contentTop() + 62;
+        this.addRenderableWidget(new FlatButton(
+            Component.literal("收聽地主電台：" + (ClientRadioListening.isListening() ? "是" : "否")),
+            x, y, 174, 22, b -> {
+                ClientRadioListening.setListening(!ClientRadioListening.isListening());
+                rebuildWidgets();
+            }));
+        this.addRenderableWidget(new FlatButton(Component.literal("音量 －"),
+            x, y + 30, 55, 20, b -> {
+                ClientRadioVolume.set(ClientRadioVolume.get() - 1);
+                rebuildWidgets();
+            }));
+        this.addRenderableWidget(new FlatButton(Component.literal("音量 " + ClientRadioVolume.get() + "%"),
+            x + 59, y + 30, 56, 20, b -> {
+                ClientRadioVolume.set(50);
+                rebuildWidgets();
+            }));
+        this.addRenderableWidget(new FlatButton(Component.literal("音量 ＋"),
+            x + 119, y + 30, 55, 20, b -> {
+                ClientRadioVolume.set(ClientRadioVolume.get() + 1);
+                rebuildWidgets();
+            }));
+        this.addRenderableWidget(new FlatButton(Component.literal("退出好友土地"), x, y + 72, 174, 22,
             b -> { Platform.sendToServer(new PersonalDimensionTravelPacket()); onClose(); }));
-        this.addRenderableWidget(new FlatButton(Component.literal("回到自己私人土地"), x, y + 30, 174, 22,
+        this.addRenderableWidget(new FlatButton(Component.literal("回到自己私人土地"), x, y + 102, 174, 22,
             b -> { Platform.sendToServer(new ReturnToOwnShelterPacket()); onClose(); }));
     }
 
