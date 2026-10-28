@@ -26,6 +26,7 @@ import com.ruadou.personaldimension.platform.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -175,6 +176,22 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             && !dimension.equals(Platform.levelKeyFor(mc.player.getUUID()));
     }
 
+    /** 拖曳時即時調整本機電台音量；左右按鈕仍可精準增減 1%。 */
+    private void addVolumeSlider(int x, int y, int width, int height) {
+        this.addRenderableWidget(new AbstractSliderButton(x, y, width, height,
+                Component.literal("音量 " + ClientRadioVolume.get() + "%"), ClientRadioVolume.get() / 100.0D) {
+            @Override
+            protected void updateMessage() {
+                setMessage(Component.literal("音量 " + Math.round(value * 100.0D) + "%"));
+            }
+
+            @Override
+            protected void applyValue() {
+                ClientRadioVolume.set((int) Math.round(value * 100.0D));
+            }
+        });
+    }
+
     private void addVisitorButtons() {
         int x = this.leftPos + (PANEL_WIDTH - 174) / 2;
         int y = contentTop() + 62;
@@ -189,11 +206,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 ClientRadioVolume.set(ClientRadioVolume.get() - 1);
                 rebuildWidgets();
             }));
-        this.addRenderableWidget(new FlatButton(Component.literal("音量 " + ClientRadioVolume.get() + "%"),
-            x + 59, y + 30, 56, 20, b -> {
-                ClientRadioVolume.set(50);
-                rebuildWidgets();
-            }));
+        addVolumeSlider(x + 59, y + 30, 56, 20);
         this.addRenderableWidget(new FlatButton(Component.literal("音量 ＋"),
             x + 119, y + 30, 55, 20, b -> {
                 ClientRadioVolume.set(ClientRadioVolume.get() + 1);
@@ -584,9 +597,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         this.addRenderableWidget(new FlatButton(Component.literal("－"),
                 x, y + 202, 38, 16,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() - 1); rebuildWidgets(); }));
-        this.addRenderableWidget(new FlatButton(Component.literal("音量 " + ClientRadioVolume.get() + "%"),
-                x + 42, y + 202, width - 84, 16,
-                b -> { ClientRadioVolume.set(50); rebuildWidgets(); }));
+        addVolumeSlider(x + 42, y + 202, width - 84, 16);
         this.addRenderableWidget(new FlatButton(Component.literal("＋"),
                 x + width - 38, y + 202, 38, 16,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() + 1); rebuildWidgets(); }));
