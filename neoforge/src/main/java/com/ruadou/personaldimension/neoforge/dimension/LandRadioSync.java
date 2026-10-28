@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 import com.ruadou.personaldimension.network.CurrentLandRadioPacket;
 import com.ruadou.personaldimension.platform.Platform;
+import com.ruadou.personaldimension.radio.DefaultRadioStations;
+import com.ruadou.personaldimension.neoforge.Config;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -27,24 +29,32 @@ public final class LandRadioSync {
         Snapshot next = current(player);
         previous = LAST_SENT.put(player.getUUID(), next);
         if (!next.equals(previous)) {
-            Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId));
+            Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId, next.streamUrl));
         }
     }
 
     private static Snapshot current(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)
                 || Platform.ownerOf(level.dimension()).isEmpty()) {
-            return new Snapshot("", false, "");
+            return new Snapshot("", false, "", "");
         }
         var data = level.getDataStorage().computeIfAbsent(
                 PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+        String id = data.getRadioSelectedStationId();
+        String url = DefaultRadioStations.url(id);
+        if (url.isEmpty()) {
+            url = data.getRadioCustomStations().stream()
+                    .filter(station -> station.id().equals(id))
+                    .map(station -> station.streamUrl()).findFirst().orElse("");
+        }
+        boolean enabled = Config.PRIVATE_LAND_RADIO_ENABLED.get() && data.isRadioEnabled() && !url.isEmpty();
         return new Snapshot(level.dimension().location().toString(),
-                data.isRadioEnabled(), data.getRadioSelectedStationId());
+                enabled, enabled ? id : "", enabled ? url : "");
     }
 
     public static void logout(ServerPlayer player) {
         LAST_SENT.remove(player.getUUID());
     }
 
-    private record Snapshot(String dimension, boolean enabled, String stationId) {}
+    private record Snapshot(String dimension, boolean enabled, String stationId, String streamUrl) {}
 }
