@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -51,7 +50,7 @@ public final class RadioPlaylistResolver {
                             || line.regionMatches(true, 0, "Title", 0, 5)
                             || line.regionMatches(true, 0, "Length", 0, 6)
                             || line.regionMatches(true, 0, "Version", 0, 7)) continue;
-                    if (line.regionMatches(true, 0, "File", 0, 4)) {
+                    if (line.matches("(?i)^File[0-9]+\\s*=.*")) {
                         int equals = line.indexOf('=');
                         if (equals < 0) continue;
                         line = line.substring(equals + 1).trim();
