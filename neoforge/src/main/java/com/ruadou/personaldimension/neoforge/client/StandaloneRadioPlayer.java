@@ -57,7 +57,7 @@ public final class StandaloneRadioPlayer {
         Session old = active;
         active = null;
         currentUrl = "";
-        if (old != null) old.close();
+        if (old != null) old.cancel();
     }
 
     private static void play(Session session) {
@@ -138,8 +138,17 @@ public final class StandaloneRadioPlayer {
         volatile InputStream input;
         volatile SourceDataLine line;
         Session(String url) { this.url = url; }
-        void close() {
+        void cancel() {
             if (!closed.compareAndSet(false, true)) return;
+            Thread worker = new Thread(this::release, "PersonalShelter-Radio-Stop");
+            worker.setDaemon(true);
+            worker.start();
+        }
+        void close() {
+            closed.set(true);
+            release();
+        }
+        private void release() {
             try { if (input != null) input.close(); } catch (Exception ignored) {}
             if (connection != null) connection.disconnect();
             SourceDataLine audio = line;
