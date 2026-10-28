@@ -72,6 +72,7 @@ public final class StandaloneRadioPlayer {
             }
             HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
             session.connection = conn;
+            if (session.closed.get()) return;
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(8000);
             conn.setInstanceFollowRedirects(false);
@@ -88,6 +89,7 @@ public final class StandaloneRadioPlayer {
             }
             try (InputStream input = new BufferedInputStream(conn.getInputStream())) {
                 session.input = input;
+                if (session.closed.get()) return;
                 Bitstream stream = new Bitstream(input);
                 Decoder decoder = new Decoder();
                 while (!session.closed.get()) {
@@ -101,6 +103,7 @@ public final class StandaloneRadioPlayer {
                         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
                         line.open(format, 32768);
                         session.line = line;
+                        if (session.closed.get()) return;
                         line.start();
                     }
                     short[] samples = pcm.getBuffer();
