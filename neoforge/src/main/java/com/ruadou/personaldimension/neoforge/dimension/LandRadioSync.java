@@ -29,7 +29,7 @@ public final class LandRadioSync {
         Snapshot next = current(player);
         previous = LAST_SENT.put(player.getUUID(), next);
         if (!next.equals(previous)) {
-            Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId, next.streamUrl));
+            Platform.sendToPlayer(player, new CurrentLandRadioPacket(next.enabled, next.stationId, next.streamUrl, next.dimension));
         }
     }
 
