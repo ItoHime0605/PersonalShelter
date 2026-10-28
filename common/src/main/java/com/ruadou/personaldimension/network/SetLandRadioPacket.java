@@ -32,7 +32,7 @@ public record SetLandRadioPacket(boolean enabled, String stationId) implements C
         if (level == null || !Platform.ownerOf(level.dimension()).filter(player.getUUID()::equals).isPresent()) return;
         var data = level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         boolean custom = data.getRadioCustomStations().stream().anyMatch(s -> s.id().equals(stationId));
-        // 預設頻道清單的 ID 由後續整合時在伺服器端驗證。
+        // 只接受伺服器認得的預設或自訂電台識別碼。
         if (enabled && !custom && !DefaultRadioStations.contains(stationId)) return;
         data.updateRadio(enabled, stationId, data.getRadioCustomStations());
         Platform.sendToPlayer(player, new LandRadioStatePacket(data.isRadioEnabled(), data.getRadioSelectedStationId()));
