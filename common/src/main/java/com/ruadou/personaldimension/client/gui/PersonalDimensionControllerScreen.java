@@ -567,7 +567,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         this.addRenderableWidget(next);
         if (radioCustomPage) {
             FlatButton add = new FlatButton(Component.literal("新增自訂電台（" + custom.size() + "/32）"),
-                    x, y + 177, width, 20,
+                    x, y + 177, width, 19,
                     b -> { radioEditingId = "new"; rebuildWidgets(); });
             add.active = custom.size() < LandRadioSettings.MAX_STATIONS;
             this.addRenderableWidget(add);
@@ -577,13 +577,13 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                     b -> { ClientRadioListening.setListening(!ClientRadioListening.isListening()); rebuildWidgets(); }));
         }
         this.addRenderableWidget(new FlatButton(Component.literal("－"),
-                x, y + 201, 38, 18,
+                x, y + 202, 38, 16,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() - 1); rebuildWidgets(); }));
         this.addRenderableWidget(new FlatButton(Component.literal("音量 " + ClientRadioVolume.get() + "%"),
-                x + 42, y + 201, width - 84, 18,
+                x + 42, y + 202, width - 84, 16,
                 b -> { ClientRadioVolume.set(50); rebuildWidgets(); }));
         this.addRenderableWidget(new FlatButton(Component.literal("＋"),
-                x + width - 38, y + 201, 38, 18,
+                x + width - 38, y + 202, 38, 16,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() + 1); rebuildWidgets(); }));
     }
 
@@ -792,7 +792,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             }
         } else if (this.activeTab == Tab.SETTINGS && this.settingsPage == SettingsPage.RADIO) {
             int x = contentLeft() + PADDING;
-            int y = contentTop() + PADDING + 223;
+            int y = contentTop() + PADDING + 211;
             graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
                 x, y, ModernStyle.TEXT, false);
             String id = ClientLandRadioData.stationId();
