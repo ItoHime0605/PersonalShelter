@@ -7,6 +7,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /**
  * Resolve a small M3U/PLS radio playlist into a stream URL off the render thread.
@@ -21,18 +23,36 @@ public final class RadioPlaylistResolver {
     private RadioPlaylistResolver() {}
 
     public static String resolve(String address) throws IOException {
+        return resolve(address, () -> false, connection -> {});
+    }
+
+    /**
+     * Register the playlist connection with the player so stop/leave-world
+     * can disconnect a blocked playlist fetch, not just the final audio stream.
+     */
+    public static String resolve(String address, BooleanSupplier cancelled,
+                                 Consumer<HttpURLConnection> registerConnection) throws IOException {
+        if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
         URI uri = RadioUrlSecurity.requirePublicHttpUrl(address);
+        if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
         String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
         if (!path.endsWith(".m3u") && !path.endsWith(".m3u8") && !path.endsWith(".pls")) {
             return uri.toString();
         }
         HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+        registerConnection.accept(connection);
+        if (cancelled.getAsBoolean()) {
+            connection.disconnect();
+            registerConnection.accept(null);
+            throw new IOException("電台連線已取消");
+        }
         connection.setConnectTimeout(TIMEOUT_MS);
         connection.setReadTimeout(TIMEOUT_MS);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("User-Agent", "PersonalShelter/Radio");
         try {
             int status = connection.getResponseCode();
+            if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
             if (status != HttpURLConnection.HTTP_OK) {
                 throw new IOException("Radio playlist HTTP status: " + status);
             }
@@ -40,6 +60,7 @@ public final class RadioPlaylistResolver {
                     new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 int chars = 0;
                 for (int i = 0; i < MAX_LINES; i++) {
+                    if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
                     String line = reader.readLine();
                     if (line == null) break;
                     chars += line.length();
@@ -66,6 +87,7 @@ public final class RadioPlaylistResolver {
             throw new IOException("Radio playlist contains no valid stream");
         } finally {
             connection.disconnect();
+            registerConnection.accept(null);
         }
     }
 
