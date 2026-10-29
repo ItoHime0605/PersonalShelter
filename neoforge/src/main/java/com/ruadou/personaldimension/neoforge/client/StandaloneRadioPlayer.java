@@ -98,11 +98,6 @@ public final class StandaloneRadioPlayer {
                     || uri.getHost() == null || uri.getUserInfo() != null) {
                 throw new IllegalArgumentException("電台網址僅支援 HTTP 或 HTTPS，且不得包含帳號密碼");
             }
-            String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
-            if (path.endsWith(".opus") || path.endsWith(".aac")
-                    || path.endsWith(".m4a") || path.endsWith(".mp4")) {
-                throw new IllegalArgumentException("目前不支援此音訊格式");
-            }
             HttpURLConnection conn = null;
             for (int redirects = 0; redirects <= 3; redirects++) {
                 if (session.closed.get()) return;
@@ -137,6 +132,11 @@ public final class StandaloneRadioPlayer {
                     throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
                 }
                 break;
+            }
+            String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
+            if (path.endsWith(".opus") || path.endsWith(".aac")
+                    || path.endsWith(".m4a") || path.endsWith(".mp4")) {
+                throw new IllegalArgumentException("目前不支援此音訊格式");
             }
             String contentType = conn.getContentType();
             if (contentType != null) {
