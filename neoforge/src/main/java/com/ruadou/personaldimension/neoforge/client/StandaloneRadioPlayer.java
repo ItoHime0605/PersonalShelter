@@ -114,7 +114,7 @@ public final class StandaloneRadioPlayer {
             conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
             int responseCode = conn.getResponseCode();
             if (session.closed.get()) return;
-            if (responseCode != HttpURLConnection.HTTP_OK) {
+            if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
                 throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
             }
             String contentType = conn.getContentType();
