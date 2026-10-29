@@ -130,8 +130,8 @@ public final class StandaloneRadioPlayer {
             try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(conn.getInputStream()), 4)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
-                byte[] signature = new byte[4];
-                int signatureLength = input.read(signature);
+                byte[] signature = input.readNBytes(4);
+                int signatureLength = signature.length;
                 if (signatureLength > 0) input.unread(signature, 0, signatureLength);
                 boolean oggSignature = signatureLength == 4
                         && signature[0] == 'O' && signature[1] == 'g'
