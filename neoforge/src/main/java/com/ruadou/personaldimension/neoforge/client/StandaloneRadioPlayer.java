@@ -104,7 +104,10 @@ public final class StandaloneRadioPlayer {
             conn.setInstanceFollowRedirects(false);
             conn.setRequestProperty("Icy-MetaData", "0");
             conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
-            if (conn.getResponseCode() != 200) throw new IllegalStateException("Radio HTTP " + conn.getResponseCode());
+            int responseCode = conn.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
+            }
             String contentType = conn.getContentType();
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
@@ -161,7 +164,14 @@ public final class StandaloneRadioPlayer {
         } catch (Exception ex) {
             if (!session.closed.get() && active == session) {
                 lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-                status = "播放失敗：" + ex.getClass().getSimpleName();
+                String type = ex.getClass().getSimpleName();
+                status = switch (type) {
+                    case "UnknownHostException" -> "播放失敗：找不到電台主機";
+                    case "SocketTimeoutException" -> "播放失敗：連線逾時";
+                    case "UnsupportedAudioFileException" -> "播放失敗：音訊格式不支援";
+                    case "LineUnavailableException" -> "播放失敗：音效裝置無法使用";
+                    default -> "播放失敗：" + type;
+                };
                 ClientRadioPlaybackStatus.set(status);
             }
         } finally {
