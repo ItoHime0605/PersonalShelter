@@ -132,7 +132,10 @@ public final class StandaloneRadioPlayer {
                         SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
                         line.open(format, 32768);
                         session.line = line;
-                        if (session.closed.get()) return;
+                        if (session.closed.get()) {
+                            line.close();
+                            return;
+                        }
                         line.start();
                         if (!session.closed.get() && active == session) {
                             status = "播放中";
@@ -186,7 +189,10 @@ public final class StandaloneRadioPlayer {
                 SourceDataLine output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, pcmFormat));
                 output.open(pcmFormat, 32768);
                 session.line = output;
-                if (session.closed.get()) return;
+                if (session.closed.get()) {
+                    output.close();
+                    return;
+                }
                 output.start();
                 if (active == session) {
                     status = "播放中";
