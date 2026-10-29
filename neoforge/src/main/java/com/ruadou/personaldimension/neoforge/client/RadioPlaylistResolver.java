@@ -21,19 +21,10 @@ public final class RadioPlaylistResolver {
     private RadioPlaylistResolver() {}
 
     public static String resolve(String address) throws IOException {
-        URI uri = checkedUri(address);
+        URI uri = RadioUrlSecurity.requirePublicHttpUrl(address);
         String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
         if (!path.endsWith(".m3u") && !path.endsWith(".m3u8") && !path.endsWith(".pls")) {
             return uri.toString();
-        }
-        // Never fetch loopback, site-local or private network playlist hosts.
-        // This is a client-side safety check; redirects are disabled below.
-        String host = uri.getHost().toLowerCase(Locale.ROOT);
-        if (host.equals("localhost") || host.endsWith(".localhost") || host.endsWith(".local")
-                || host.equals("0.0.0.0") || host.equals("127.0.0.1") || host.startsWith("127.")
-                || host.startsWith("10.") || host.startsWith("192.168.") || host.startsWith("169.254.")
-                || host.equals("::1") || host.equals("[::1]")) {
-            throw new IOException("Local radio playlist hosts are not allowed");
         }
         HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
         connection.setConnectTimeout(TIMEOUT_MS);
@@ -66,8 +57,8 @@ public final class RadioPlaylistResolver {
                         line = line.substring(equals + 1).trim();
                     }
                     try {
-                        return checkedUri(uri.resolve(line).toString()).toString();
-                    } catch (IllegalArgumentException ignored) {
+                        return RadioUrlSecurity.requirePublicHttpUrl(uri.resolve(line).toString()).toString();
+                    } catch (IOException | IllegalArgumentException ignored) {
                         // Ignore invalid playlist entries and try the next one.
                     }
                 }
@@ -78,13 +69,4 @@ public final class RadioPlaylistResolver {
         }
     }
 
-    private static URI checkedUri(String text) {
-        URI uri = URI.create(text);
-        String scheme = uri.getScheme();
-        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
-                || uri.getHost() == null || uri.getUserInfo() != null) {
-            throw new IllegalArgumentException("Only HTTP/HTTPS radio streams are allowed");
-        }
-        return uri;
-    }
 }
