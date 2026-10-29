@@ -17,6 +17,7 @@ import com.ruadou.personaldimension.radio.DefaultRadioStations;
 import com.ruadou.personaldimension.client.ClientLandRadioData;
 import com.ruadou.personaldimension.client.ClientRadioVolume;
 import com.ruadou.personaldimension.client.ClientRadioListening;
+import com.ruadou.personaldimension.client.ClientRadioPlaybackStatus;
 import com.ruadou.personaldimension.client.ClientCurrentLandRadio;
 import com.ruadou.personaldimension.network.SetShelterNamePacket;
 import com.ruadou.personaldimension.client.ClientShelterName;
@@ -819,6 +820,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             String id = ClientLandRadioData.stationId();
             graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
                 x, y + 12, ModernStyle.TEXT_SUB, false);
+            graphics.drawString(this.font, Component.literal("播放狀態：" + ClientRadioPlaybackStatus.get()),
+                x, y + 24, ModernStyle.TEXT_SUB, false);
 
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
             this.teleportPanel.render(graphics, mouseX, mouseY);
