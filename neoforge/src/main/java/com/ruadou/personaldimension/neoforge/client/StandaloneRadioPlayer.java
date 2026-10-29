@@ -17,12 +17,16 @@ import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.Header;
 import net.sourceforge.jaad.adts.ADTSDemultiplexer;
 import java.io.BufferedInputStream;
+import java.io.EOFException;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Locale;
+import java.util.Objects;
 
 /** Independent MP3, Ogg and ADTS AAC radio engine; decoding never runs on the game thread. */
 public final class StandaloneRadioPlayer {
@@ -138,12 +142,27 @@ public final class StandaloneRadioPlayer {
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
                 if (type.contains("mp4") || type.contains("opus")) {
-                    throw new IllegalArgumentException("Unsupported radio stream format: " + type);
+                    throw new IllegalArgumentException("不支援的電台音訊格式：" + type);
                 }
             }
             boolean aac = path.endsWith(".aac") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("aac"));
             boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
-            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(conn.getInputStream()), 4)) {
+            // Some Icecast/Shoutcast servers insert ICY metadata even when the
+            // client requests Icy-MetaData: 0. Strip it before probing or
+            // decoding, otherwise MP3/AAC frames become corrupted periodically.
+            InputStream networkAudio = conn.getInputStream();
+            String metaintHeader = conn.getHeaderField("icy-metaint");
+            if (metaintHeader != null && !metaintHeader.isBlank()) {
+                final int interval;
+                try {
+                    interval = Integer.parseInt(metaintHeader.trim());
+                } catch (NumberFormatException exception) {
+                    throw new IOException("電台 ICY 中繼資料間隔無效", exception);
+                }
+                if (interval <= 0) throw new IOException("電台 ICY 中繼資料間隔無效");
+                networkAudio = new IcyMetadataInputStream(networkAudio, interval);
+            }
+            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 4)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
                 byte[] signature = input.readNBytes(4);
@@ -267,7 +286,9 @@ public final class StandaloneRadioPlayer {
     }
 
     private static void playOgg(Session session, InputStream input) throws Exception {
-        try (AudioInputStream encoded = AudioSystem.getAudioInputStream(input)) {
+        // Java Sound SPI readers require mark/reset during format probing.
+        // PushbackInputStream alone does not support mark(), so wrap it first.
+        try (AudioInputStream encoded = AudioSystem.getAudioInputStream(new BufferedInputStream(input, 65536))) {
             AudioFormat source = encoded.getFormat();
             AudioFormat pcmFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
                     source.getSampleRate(), 16, source.getChannels(),
@@ -384,6 +405,91 @@ public final class StandaloneRadioPlayer {
                 scaledPcm[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
             }
             if (!session.closed.get()) output.write(scaledPcm, 0, decoded.length);
+        }
+    }
+
+    /**
+     * Strip the optional Icecast/Shoutcast metadata blocks that appear after
+     * every icy-metaint audio bytes. The stream exposed to codecs contains only
+     * audio; skip() must use read() to preserve the metadata boundary.
+     */
+    private static final class IcyMetadataInputStream extends FilterInputStream {
+        private final int interval;
+        private int remaining;
+        private boolean ended;
+        private final byte[] discard = new byte[4096];
+
+        IcyMetadataInputStream(InputStream source, int interval) {
+            super(source);
+            if (interval <= 0) throw new IllegalArgumentException("ICY interval must be positive");
+            this.interval = interval;
+            this.remaining = interval;
+        }
+
+        private void advance() throws IOException {
+            int blocks = in.read();
+            if (blocks < 0) {
+                ended = true;
+                return;
+            }
+            int metadataBytes = blocks * 16;
+            while (metadataBytes > 0) {
+                int count = in.read(discard, 0, Math.min(metadataBytes, discard.length));
+                if (count < 0) throw new EOFException("電台 ICY 中繼資料遭到截斷");
+                if (count == 0) continue;
+                metadataBytes -= count;
+            }
+            remaining = interval;
+        }
+
+        @Override
+        public int read() throws IOException {
+            if (ended) return -1;
+            if (remaining == 0) advance();
+            if (ended) return -1;
+            int value = in.read();
+            if (value < 0) ended = true;
+            else remaining--;
+            return value;
+        }
+
+        @Override
+        public int read(byte[] bytes, int offset, int length) throws IOException {
+            Objects.checkFromIndexSize(offset, length, bytes.length);
+            if (length == 0) return 0;
+            if (ended) return -1;
+            if (remaining == 0) advance();
+            if (ended) return -1;
+            int count = in.read(bytes, offset, Math.min(length, remaining));
+            if (count < 0) ended = true;
+            else remaining -= count;
+            return count;
+        }
+
+        @Override
+        public long skip(long length) throws IOException {
+            if (length <= 0) return 0;
+            long skipped = 0;
+            while (skipped < length) {
+                int count = read(discard, 0, (int) Math.min(length - skipped, discard.length));
+                if (count < 0) break;
+                if (count == 0) continue;
+                skipped += count;
+            }
+            return skipped;
+        }
+
+        @Override
+        public int available() throws IOException {
+            return ended ? 0 : Math.min(remaining, in.available());
+        }
+
+        @Override
+        public boolean markSupported() { return false; }
+
+        @Override
+        public void reset() throws IOException {
+            throw new IOException("ICY 音訊串流不支援重設讀取位置");
         }
     }
 
