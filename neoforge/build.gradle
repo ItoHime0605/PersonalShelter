@@ -50,6 +50,10 @@ dependencies {
     // MP3 decoder bundled into Personal Shelter; players do not install OpenFM.
     implementation "javazoom:jlayer:1.0.1"
     shadowBundle "javazoom:jlayer:1.0.1"
+
+    // Ogg Vorbis Java Sound SPI, bundled with the client mod.
+    implementation "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
+    shadowBundle "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
 }
 
 processResources {
