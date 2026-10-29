@@ -81,7 +81,7 @@ public final class StandaloneRadioPlayer {
             String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
             if (path.endsWith(".opus") || path.endsWith(".aac")
                     || path.endsWith(".m4a") || path.endsWith(".mp4")) {
-                throw new IllegalArgumentException("This radio engine currently supports MP3 streams only");
+                throw new IllegalArgumentException("目前不支援此音訊格式");
             }
             HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
             session.connection = conn;
@@ -149,6 +149,7 @@ public final class StandaloneRadioPlayer {
                 ClientRadioPlaybackStatus.set(status);
             }
         } finally {
+            boolean interrupted = session.closed.get();
             session.close();
             synchronized (LOCK) {
                 if (active == session) {
@@ -156,7 +157,7 @@ public final class StandaloneRadioPlayer {
                     currentUrl = "";
                     failedUrl = session.url;
                     retryAfter = System.currentTimeMillis() + 10_000L;
-                    if (!session.closed.get() && !status.startsWith("播放失敗")) {
+                    if (!interrupted && !status.startsWith("播放失敗")) {
                         status = "連線中斷，稍後重試";
                         ClientRadioPlaybackStatus.set(status);
                     }
