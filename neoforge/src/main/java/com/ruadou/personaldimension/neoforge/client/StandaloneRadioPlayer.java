@@ -109,7 +109,7 @@ public final class StandaloneRadioPlayer {
                         session.line = line;
                         if (session.closed.get()) return;
                         line.start();
-                        if (!session.closed.get()) status = "播放中";
+                        if (!session.closed.get() && active == session) status = "播放中";
                     }
                     short[] samples = pcm.getBuffer();
                     int length = pcm.getBufferLength();
@@ -125,7 +125,7 @@ public final class StandaloneRadioPlayer {
                 }
             }
         } catch (Exception ex) {
-            if (!session.closed.get()) status = "播放失敗：" + ex.getClass().getSimpleName();
+            if (!session.closed.get() && active == session) status = "播放失敗：" + ex.getClass().getSimpleName();
         } finally {
             session.close();
             synchronized (LOCK) {
@@ -134,6 +134,7 @@ public final class StandaloneRadioPlayer {
                     currentUrl = "";
                     failedUrl = session.url;
                     retryAfter = System.currentTimeMillis() + 10_000L;
+                    if (!session.closed.get() && !status.startsWith("播放失敗")) status = "連線中斷，稍後重試";
                 }
             }
         }
