@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /** 登出世界後清除土地電台狀態，避免重連另一伺服器沿用舊頻道。 */
 public final class ClientRadioLifecycle {
     private static boolean wasInWorld;
+    private static boolean wasRadioPlaying;
 
     private ClientRadioLifecycle() {}
 
@@ -23,11 +24,13 @@ public final class ClientRadioLifecycle {
         }
         wasInWorld = inWorld;
         StandaloneRadioPlayer.tick();
-        // Silence only Minecraft's ambient background music while a land radio
-        // is actually playing. Keep sound effects, records and user volume settings.
-        // When radio playback stops, vanilla music scheduling resumes normally.
-        if (inWorld && StandaloneRadioPlayer.isPlaying()) {
+        // Stop the current vanilla track only once when the radio starts.
+        // RadioMusicManagerMixin prevents new background tracks from being
+        // scheduled during playback, without muting other sound categories.
+        boolean radioPlaying = inWorld && StandaloneRadioPlayer.isPlaying();
+        if (radioPlaying && !wasRadioPlaying) {
             mc.getMusicManager().stopPlaying();
         }
+        wasRadioPlaying = radioPlaying;
     }
 }
