@@ -199,11 +199,23 @@ public final class StandaloneRadioPlayer {
                 Decoder decoder = new Decoder();
                 // Reuse a PCM buffer instead of allocating on every MP3 frame.
                 byte[] bytes = new byte[16384];
+                int consecutiveDecodeFailures = 0;
                 while (!session.closed.get()) {
                     Header header = stream.readFrame();
                     if (header == null) break;
                     try {
-                        SampleBuffer pcm = (SampleBuffer) decoder.decodeFrame(header, stream);
+                        SampleBuffer pcm;
+                        try {
+                            pcm = (SampleBuffer) decoder.decodeFrame(header, stream);
+                            consecutiveDecodeFailures = 0;
+                        } catch (javazoom.jl.decoder.DecoderException badFrame) {
+                            // A single corrupt MP3 frame must not kill a live radio session.
+                            // Give up after repeated failures instead of looping forever.
+                            if (++consecutiveDecodeFailures >= 5) {
+                                throw new IOException("MP3 音訊連續解碼失敗", badFrame);
+                            }
+                            continue;
+                        }
                         if (session.closed.get()) break;
                         AudioFormat format = new AudioFormat(pcm.getSampleFrequency(), 16,
                                 pcm.getChannelCount(), true, false);
@@ -244,7 +256,7 @@ public final class StandaloneRadioPlayer {
                             bytes[i * 2] = (byte) value;
                             bytes[i * 2 + 1] = (byte) (value >>> 8);
                         }
-                        if (!session.closed.get()) output.write(bytes, 0, byteLength);
+                        writePcm(session, output, bytes, byteLength, format.getFrameSize());
                     } finally {
                         stream.closeFrame();
                     }
@@ -278,6 +290,24 @@ public final class StandaloneRadioPlayer {
                     }
                 }
             }
+        }
+    }
+
+    /** Write whole PCM frames in bounded chunks so stop/switch can release the line promptly. */
+    private static void writePcm(Session session, SourceDataLine output, byte[] data,
+                                 int length, int frameSize) throws IOException {
+        if (frameSize <= 0 || length < 0 || length > data.length || length % frameSize != 0) {
+            throw new IOException("電台 PCM 音訊影格長度無效");
+        }
+        int chunkSize = Math.max(frameSize, (8192 / frameSize) * frameSize);
+        for (int offset = 0; offset < length && !session.closed.get();) {
+            int requested = Math.min(chunkSize, length - offset);
+            int written = output.write(data, offset, requested);
+            if (written <= 0 || written % frameSize != 0) {
+                if (session.closed.get()) return;
+                throw new IOException("電台音訊輸出中斷");
+            }
+            offset += written;
         }
     }
 
@@ -326,7 +356,7 @@ public final class StandaloneRadioPlayer {
                         buffer[i] = (byte) scaled;
                         buffer[i + 1] = (byte) (scaled >>> 8);
                     }
-                    if (aligned > 0 && !session.closed.get()) output.write(buffer, 0, aligned);
+                    if (aligned > 0) writePcm(session, output, buffer, aligned, frameSize);
                     // Preserve a partial frame without corrupting the next chunk.
                     if (remainder > 0) System.arraycopy(buffer, aligned, buffer, 0, remainder);
                     pending = remainder;
@@ -343,6 +373,7 @@ public final class StandaloneRadioPlayer {
         // Never modify JAAD's decoder-owned PCM array: its storage can be reused
         // on the next frame. Keep a separate, reusable output buffer for volume.
         byte[] scaledPcm = new byte[8192];
+        int consecutiveDecodeFailures = 0;
         while (!session.closed.get()) {
             byte[] frame;
             try {
@@ -353,7 +384,17 @@ public final class StandaloneRadioPlayer {
                 break;
             }
             if (frame == null || session.closed.get()) break;
-            decoder.decodeFrame(frame, pcm);
+            try {
+                decoder.decodeFrame(frame, pcm);
+                consecutiveDecodeFailures = 0;
+            } catch (net.sourceforge.jaad.aac.AACException badFrame) {
+                // Isolated AAC transport damage is common on live streams.
+                // Reconnect if decoding remains broken for five frames.
+                if (++consecutiveDecodeFailures >= 5) {
+                    throw new IOException("AAC 音訊連續解碼失敗", badFrame);
+                }
+                continue;
+            }
             if (session.closed.get()) break;
             byte[] decoded = pcm.getData();
             // Some AAC frames do not produce samples (e.g. while initializing SBR).
@@ -404,7 +445,7 @@ public final class StandaloneRadioPlayer {
                 scaledPcm[i] = bigEndian ? (byte) (scaled >>> 8) : (byte) scaled;
                 scaledPcm[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
             }
-            if (!session.closed.get()) output.write(scaledPcm, 0, decoded.length);
+            writePcm(session, output, scaledPcm, decoded.length, frameSize);
         }
     }
 
