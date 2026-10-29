@@ -17,6 +17,7 @@ import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.Header;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -126,8 +127,16 @@ public final class StandaloneRadioPlayer {
                 }
             }
             boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
-            try (InputStream input = new BufferedInputStream(conn.getInputStream())) {
-                if (ogg) {
+            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(conn.getInputStream()), 4)) {
+                // Radio servers often return application/octet-stream or omit file extensions.
+                // Detect the Ogg container signature instead of relying on HTTP metadata alone.
+                byte[] signature = new byte[4];
+                int signatureLength = input.read(signature);
+                if (signatureLength > 0) input.unread(signature, 0, signatureLength);
+                boolean oggSignature = signatureLength == 4
+                        && signature[0] == 'O' && signature[1] == 'g'
+                        && signature[2] == 'g' && signature[3] == 'S';
+                if (ogg || oggSignature) {
                     session.input = input;
                     if (!session.closed.get()) playOgg(session, input);
                     return;
