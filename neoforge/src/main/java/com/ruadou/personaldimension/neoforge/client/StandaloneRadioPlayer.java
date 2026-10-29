@@ -154,14 +154,24 @@ public final class StandaloneRadioPlayer {
                         && signature[2] == 'g' && signature[3] == 'S';
                 boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
                         && (signature[1] & 0xf6) == 0xf0;
-                if (aac || adtsSignature) {
-                    session.setInput(input);
-                    if (!session.closed.get()) playAac(session, input);
-                    return;
+                // Prefer the actual container header over extension / Content-Type.
+                // Some stations advertise audio/aacp or audio/mpeg incorrectly, and
+                // misrouting an Ogg or MP3 stream into the AAC decoder breaks playback.
+                boolean mp3Signature = signatureLength >= 3
+                        && signature[0] == 'I' && signature[1] == 'D' && signature[2] == '3';
+                if (!mp3Signature && signatureLength >= 2) {
+                    int second = signature[1] & 255;
+                    mp3Signature = (signature[0] & 255) == 255
+                            && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
                 }
-                if (ogg || oggSignature) {
+                if (oggSignature || (ogg && !adtsSignature && !mp3Signature)) {
                     session.setInput(input);
                     if (!session.closed.get()) playOgg(session, input);
+                    return;
+                }
+                if (adtsSignature || (aac && !mp3Signature)) {
+                    session.setInput(input);
+                    if (!session.closed.get()) playAac(session, input);
                     return;
                 }
                 session.setInput(input);
@@ -309,6 +319,9 @@ public final class StandaloneRadioPlayer {
         ADTSDemultiplexer adts = new ADTSDemultiplexer(input);
         net.sourceforge.jaad.aac.Decoder decoder = new net.sourceforge.jaad.aac.Decoder(adts.getDecoderSpecificInfo());
         net.sourceforge.jaad.aac.SampleBuffer pcm = new net.sourceforge.jaad.aac.SampleBuffer();
+        // Never modify JAAD's decoder-owned PCM array: its storage can be reused
+        // on the next frame. Keep a separate, reusable output buffer for volume.
+        byte[] scaledPcm = new byte[8192];
         while (!session.closed.get()) {
             byte[] frame;
             try {
@@ -321,12 +334,17 @@ public final class StandaloneRadioPlayer {
             if (frame == null || session.closed.get()) break;
             decoder.decodeFrame(frame, pcm);
             if (session.closed.get()) break;
-            byte[] bytes = pcm.getData();
+            byte[] decoded = pcm.getData();
             // Some AAC frames do not produce samples (e.g. while initializing SBR).
-            if (bytes.length == 0) continue;
+            if (decoded == null || decoded.length == 0) continue;
             if (pcm.getBitsPerSample() != 16 || pcm.getSampleRate() <= 0 || pcm.getChannels() <= 0) {
                 throw new IllegalArgumentException("AAC 音訊格式不支援");
             }
+            int frameSize = pcm.getChannels() * 2;
+            if (decoded.length % frameSize != 0) {
+                throw new IllegalArgumentException("AAC 音訊資料未對齊完整影格");
+            }
+            if (scaledPcm.length < decoded.length) scaledPcm = new byte[decoded.length];
             AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, pcm.isBigEndian());
             SourceDataLine output = session.getLine();
             // HE-AAC can switch output rate after SBR initializes. Reopen the output
@@ -357,15 +375,15 @@ public final class StandaloneRadioPlayer {
             }
             double volume = ClientRadioVolume.get() / 100.0;
             boolean bigEndian = pcm.isBigEndian();
-            for (int i = 0; i + 1 < bytes.length; i += 2) {
+            for (int i = 0; i < decoded.length; i += 2) {
                 short value = bigEndian
-                        ? (short) ((bytes[i] << 8) | (bytes[i + 1] & 255))
-                        : (short) ((bytes[i] & 255) | (bytes[i + 1] << 8));
+                        ? (short) ((decoded[i] << 8) | (decoded[i + 1] & 255))
+                        : (short) ((decoded[i] & 255) | (decoded[i + 1] << 8));
                 short scaled = clampPcm(value * volume);
-                bytes[i] = bigEndian ? (byte) (scaled >>> 8) : (byte) scaled;
-                bytes[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
+                scaledPcm[i] = bigEndian ? (byte) (scaled >>> 8) : (byte) scaled;
+                scaledPcm[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
             }
-            if (!session.closed.get()) output.write(bytes, 0, bytes.length);
+            if (!session.closed.get()) output.write(scaledPcm, 0, decoded.length);
         }
     }
 
