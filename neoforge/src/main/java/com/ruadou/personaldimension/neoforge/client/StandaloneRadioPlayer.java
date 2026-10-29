@@ -27,6 +27,8 @@ public final class StandaloneRadioPlayer {
     private static volatile String currentUrl = "";
     private static volatile long retryAfter;
     private static volatile String failedUrl = "";
+    private static volatile String status = "已停止";
+    public static String status() { return status; }
     private StandaloneRadioPlayer() {}
 
     public static void tick() {
@@ -43,6 +45,7 @@ public final class StandaloneRadioPlayer {
             Session session = new Session(url);
             active = session;
             currentUrl = url;
+            status = "正在連線";
             Thread thread = new Thread(() -> play(session), "PersonalShelter-Radio");
             thread.setDaemon(true);
             thread.start();
@@ -58,6 +61,7 @@ public final class StandaloneRadioPlayer {
         active = null;
         currentUrl = "";
         if (old != null) old.cancel();
+        status = "已停止";
     }
 
     private static void play(Session session) {
@@ -105,6 +109,7 @@ public final class StandaloneRadioPlayer {
                         session.line = line;
                         if (session.closed.get()) return;
                         line.start();
+                        if (!session.closed.get()) status = "播放中";
                     }
                     short[] samples = pcm.getBuffer();
                     int length = pcm.getBufferLength();
@@ -120,7 +125,7 @@ public final class StandaloneRadioPlayer {
                 }
             }
         } catch (Exception ex) {
-            // Failed streams retry after a delay; do not flood the client log.
+            if (!session.closed.get()) status = "播放失敗：" + ex.getClass().getSimpleName();
         } finally {
             session.close();
             synchronized (LOCK) {
