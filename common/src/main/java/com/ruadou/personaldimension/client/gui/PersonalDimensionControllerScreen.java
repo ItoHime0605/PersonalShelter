@@ -585,11 +585,15 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         next.active = radioPage + 1 < pageCount;
         this.addRenderableWidget(next);
         if (radioCustomPage) {
-            FlatButton add = new FlatButton(Component.literal("新增自訂電台（" + custom.size() + "/32）"),
-                    x, y + 177, width, 19,
-                    b -> { radioEditingId = "new"; rebuildWidgets(); });
+            FlatButton add = new FlatButton(Component.literal("新增電台（" + custom.size() + "/32）"),
+                    x, y + 177, half, 19,
+                    b -> { radioEditingId = "new"; radioEditorError = ""; rebuildWidgets(); });
             add.active = custom.size() < LandRadioSettings.MAX_STATIONS;
             this.addRenderableWidget(add);
+            // Keep the personal listening toggle accessible on both station tabs.
+            this.addRenderableWidget(new FlatButton(Component.literal("收聽：" + (ClientRadioListening.isListening() ? "是" : "否")),
+                    x + half + 6, y + 177, half, 19,
+                    b -> { ClientRadioListening.setListening(!ClientRadioListening.isListening()); rebuildWidgets(); }));
         } else {
             this.addRenderableWidget(new FlatButton(Component.literal("收聽：" + (ClientRadioListening.isListening() ? "是" : "否")),
                     x, y + 177, width, 20,
