@@ -95,12 +95,9 @@ public final class StandaloneRadioPlayer {
         try {
             String url = RadioPlaylistResolver.resolve(session.url);
             if (session.closed.get()) return;
-            URI uri = URI.create(url);
-            String scheme = uri.getScheme();
-            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
-                    || uri.getHost() == null || uri.getUserInfo() != null) {
-                throw new IllegalArgumentException("電台網址僅支援 HTTP 或 HTTPS，且不得包含帳號密碼");
-            }
+            // DNS and address checks happen off-thread, before opening any socket.
+            URI uri = RadioUrlSecurity.requirePublicHttpUrl(url);
+            if (session.closed.get()) return;
             HttpURLConnection conn = null;
             for (int redirects = 0; redirects <= 3; redirects++) {
                 if (session.closed.get()) return;
@@ -119,13 +116,9 @@ public final class StandaloneRadioPlayer {
                     if (redirects == 3) throw new IllegalStateException("電台轉址次數過多");
                     String location = conn.getHeaderField("Location");
                     if (location == null || location.isBlank()) throw new IllegalStateException("電台轉址缺少目標網址");
-                    URI target = uri.resolve(location);
-                    String targetScheme = target.getScheme();
-                    if (targetScheme == null || (!targetScheme.equalsIgnoreCase("http")
-                            && !targetScheme.equalsIgnoreCase("https"))
-                            || target.getHost() == null || target.getUserInfo() != null) {
-                        throw new IllegalArgumentException("電台轉址目標不是有效的 HTTP／HTTPS 網址");
-                    }
+                    // A public URL may redirect to a private address; validate every hop.
+                    URI target = RadioUrlSecurity.requirePublicHttpUrl(uri.resolve(location).toString());
+                    if (session.closed.get()) return;
                     conn.disconnect();
                     session.connection = null;
                     uri = target;
