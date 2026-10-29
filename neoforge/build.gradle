@@ -69,6 +69,8 @@ sourceSets.main.resources.srcDir(project(':common').sourceSets.main.resources.sr
 
 shadowJar {
     configurations = [project.configurations.shadowBundle]
+    // Preserve Java Sound SPI registrations from bundled codec dependencies.
+    mergeServiceFiles()
     archiveClassifier = 'dev-shadow'
 }
 
