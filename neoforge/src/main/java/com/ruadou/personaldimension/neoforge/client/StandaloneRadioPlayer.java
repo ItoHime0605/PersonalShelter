@@ -3,6 +3,7 @@ package com.ruadou.personaldimension.neoforge.client;
 import com.ruadou.personaldimension.client.ClientCurrentLandRadio;
 import com.ruadou.personaldimension.client.ClientRadioListening;
 import com.ruadou.personaldimension.client.ClientRadioVolume;
+import com.ruadou.personaldimension.client.ClientRadioPlaybackStatus;
 import net.minecraft.client.Minecraft;
 
 import javax.sound.sampled.AudioSystem;
@@ -46,6 +47,7 @@ public final class StandaloneRadioPlayer {
             active = session;
             currentUrl = url;
             status = "正在連線";
+            ClientRadioPlaybackStatus.set(status);
             Thread thread = new Thread(() -> play(session), "PersonalShelter-Radio");
             thread.setDaemon(true);
             thread.start();
@@ -62,6 +64,7 @@ public final class StandaloneRadioPlayer {
         currentUrl = "";
         if (old != null) old.cancel();
         status = "已停止";
+        ClientRadioPlaybackStatus.set(status);
     }
 
     private static void play(Session session) {
@@ -109,7 +112,10 @@ public final class StandaloneRadioPlayer {
                         session.line = line;
                         if (session.closed.get()) return;
                         line.start();
-                        if (!session.closed.get() && active == session) status = "播放中";
+                        if (!session.closed.get() && active == session) {
+                            status = "播放中";
+                            ClientRadioPlaybackStatus.set(status);
+                        }
                     }
                     short[] samples = pcm.getBuffer();
                     int length = pcm.getBufferLength();
@@ -125,7 +131,10 @@ public final class StandaloneRadioPlayer {
                 }
             }
         } catch (Exception ex) {
-            if (!session.closed.get() && active == session) status = "播放失敗：" + ex.getClass().getSimpleName();
+            if (!session.closed.get() && active == session) {
+                status = "播放失敗：" + ex.getClass().getSimpleName();
+                ClientRadioPlaybackStatus.set(status);
+            }
         } finally {
             session.close();
             synchronized (LOCK) {
@@ -134,7 +143,10 @@ public final class StandaloneRadioPlayer {
                     currentUrl = "";
                     failedUrl = session.url;
                     retryAfter = System.currentTimeMillis() + 10_000L;
-                    if (!session.closed.get() && !status.startsWith("播放失敗")) status = "連線中斷，稍後重試";
+                    if (!session.closed.get() && !status.startsWith("播放失敗")) {
+                        status = "連線中斷，稍後重試";
+                        ClientRadioPlaybackStatus.set(status);
+                    }
                 }
             }
         }
