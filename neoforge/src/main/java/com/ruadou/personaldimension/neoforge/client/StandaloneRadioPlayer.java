@@ -214,6 +214,7 @@ public final class StandaloneRadioPlayer {
         volatile HttpURLConnection connection;
         volatile InputStream input;
         volatile SourceDataLine line;
+        private final AtomicBoolean released = new AtomicBoolean();
         Session(String url) { this.url = url; }
         void cancel() {
             if (!closed.compareAndSet(false, true)) return;
@@ -226,6 +227,7 @@ public final class StandaloneRadioPlayer {
             release();
         }
         private void release() {
+            if (!released.compareAndSet(false, true)) return;
             try { if (input != null) input.close(); } catch (Exception ignored) {}
             if (connection != null) connection.disconnect();
             SourceDataLine audio = line;
