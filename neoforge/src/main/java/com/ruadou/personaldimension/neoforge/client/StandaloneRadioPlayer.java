@@ -103,13 +103,17 @@ public final class StandaloneRadioPlayer {
             }
             HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
             session.connection = conn;
-            if (session.closed.get()) return;
+            if (session.closed.get()) {
+                conn.disconnect();
+                return;
+            }
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(8000);
             conn.setInstanceFollowRedirects(false);
             conn.setRequestProperty("Icy-MetaData", "0");
             conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
             int responseCode = conn.getResponseCode();
+            if (session.closed.get()) return;
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
             }
