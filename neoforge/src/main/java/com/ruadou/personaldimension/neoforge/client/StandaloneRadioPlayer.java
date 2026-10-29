@@ -7,6 +7,7 @@ import com.ruadou.personaldimension.client.ClientRadioPlaybackStatus;
 import net.minecraft.client.Minecraft;
 
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.AudioFormat;
@@ -78,7 +79,7 @@ public final class StandaloneRadioPlayer {
             if (session.closed.get()) return;
             URI uri = URI.create(url);
             String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
-            if (path.endsWith(".ogg") || path.endsWith(".opus") || path.endsWith(".aac")
+            if (path.endsWith(".opus") || path.endsWith(".aac")
                     || path.endsWith(".m4a") || path.endsWith(".mp4")) {
                 throw new IllegalArgumentException("This radio engine currently supports MP3 streams only");
             }
@@ -94,12 +95,18 @@ public final class StandaloneRadioPlayer {
             String contentType = conn.getContentType();
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                if (type.contains("ogg") || type.contains("aac") || type.contains("mp4")
+                if (type.contains("aac") || type.contains("mp4")
                         || type.contains("opus")) {
                     throw new IllegalArgumentException("Unsupported radio stream format: " + type);
                 }
             }
+            boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
             try (InputStream input = new BufferedInputStream(conn.getInputStream())) {
+                if (ogg) {
+                    session.input = input;
+                    if (!session.closed.get()) playOgg(session, input);
+                    return;
+                }
                 session.input = input;
                 if (session.closed.get()) return;
                 Bitstream stream = new Bitstream(input);
@@ -153,6 +160,38 @@ public final class StandaloneRadioPlayer {
                         status = "連線中斷，稍後重試";
                         ClientRadioPlaybackStatus.set(status);
                     }
+                }
+            }
+        }
+    }
+
+    private static void playOgg(Session session, InputStream input) throws Exception {
+        try (AudioInputStream encoded = AudioSystem.getAudioInputStream(input)) {
+            AudioFormat source = encoded.getFormat();
+            AudioFormat pcmFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                    source.getSampleRate(), 16, source.getChannels(),
+                    source.getChannels() * 2, source.getSampleRate(), false);
+            try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, encoded)) {
+                SourceDataLine output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, pcmFormat));
+                output.open(pcmFormat, 32768);
+                session.line = output;
+                if (session.closed.get()) return;
+                output.start();
+                if (active == session) {
+                    status = "播放中";
+                    ClientRadioPlaybackStatus.set(status);
+                }
+                byte[] buffer = new byte[8192];
+                int length;
+                while (!session.closed.get() && (length = pcm.read(buffer)) != -1) {
+                    double volume = ClientRadioVolume.get() / 100.0;
+                    for (int i = 0; i + 1 < length; i += 2) {
+                        short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
+                        short scaled = (short) Math.round(sample * volume);
+                        buffer[i] = (byte) scaled;
+                        buffer[i + 1] = (byte) (scaled >>> 8);
+                    }
+                    if (!session.closed.get()) output.write(buffer, 0, length);
                 }
             }
         }
