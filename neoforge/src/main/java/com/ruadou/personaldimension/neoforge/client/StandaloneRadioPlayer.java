@@ -94,7 +94,7 @@ public final class StandaloneRadioPlayer {
     private static void play(Session session) {
         try {
             String url = RadioPlaylistResolver.resolve(session.url, session.closed::get,
-                    connection -> session.connection = connection);
+                    connection -> session.setConnection(connection));
             if (session.closed.get()) return;
             // DNS and address checks happen off-thread, before opening any socket.
             URI uri = RadioUrlSecurity.requirePublicHttpUrl(url);
@@ -103,7 +103,7 @@ public final class StandaloneRadioPlayer {
             for (int redirects = 0; redirects <= 3; redirects++) {
                 if (session.closed.get()) return;
                 conn = (HttpURLConnection) uri.toURL().openConnection();
-                session.connection = conn;
+                session.setConnection(conn);
                 if (session.closed.get()) return;
                 conn.setConnectTimeout(5000);
                 conn.setReadTimeout(8000);
@@ -121,7 +121,7 @@ public final class StandaloneRadioPlayer {
                     URI target = RadioUrlSecurity.requirePublicHttpUrl(uri.resolve(location).toString());
                     if (session.closed.get()) return;
                     conn.disconnect();
-                    session.connection = null;
+                    session.setConnection(null);
                     uri = target;
                     continue;
                 }
@@ -155,16 +155,16 @@ public final class StandaloneRadioPlayer {
                 boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
                         && (signature[1] & 0xf6) == 0xf0;
                 if (aac || adtsSignature) {
-                    session.input = input;
+                    session.setInput(input);
                     if (!session.closed.get()) playAac(session, input);
                     return;
                 }
                 if (ogg || oggSignature) {
-                    session.input = input;
+                    session.setInput(input);
                     if (!session.closed.get()) playOgg(session, input);
                     return;
                 }
-                session.input = input;
+                session.setInput(input);
                 if (session.closed.get()) return;
                 Bitstream stream = new Bitstream(input);
                 Decoder decoder = new Decoder();
@@ -178,19 +178,19 @@ public final class StandaloneRadioPlayer {
                         if (session.closed.get()) break;
                         AudioFormat format = new AudioFormat(pcm.getSampleFrequency(), 16,
                                 pcm.getChannelCount(), true, false);
-                        SourceDataLine output = session.line;
+                        SourceDataLine output = session.getLine();
                         // Some radio streams splice tracks with different sample rates or
                         // channel counts. Never send their PCM to a stale audio format.
                         if (output == null || !output.getFormat().matches(format)) {
                             if (output != null) {
-                                session.line = null;
+                                session.setLine(null);
                                 output.stop();
                                 output.flush();
                                 output.close();
                             }
                             output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
                             output.open(format, 32768);
-                            session.line = output;
+                            session.setLine(output);
                             if (session.closed.get()) {
                                 output.close();
                                 return;
@@ -265,7 +265,7 @@ public final class StandaloneRadioPlayer {
             try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, encoded)) {
                 SourceDataLine output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, pcmFormat));
                 output.open(pcmFormat, 32768);
-                session.line = output;
+                session.setLine(output);
                 if (session.closed.get()) {
                     output.close();
                     return;
@@ -275,28 +275,30 @@ public final class StandaloneRadioPlayer {
                     status = "播放中";
                     ClientRadioPlaybackStatus.set(status);
                 }
-                byte[] buffer = new byte[8193];
-                int length;
-                int pendingByte = -1;
-                while (!session.closed.get() && (length = pcm.read(buffer, pendingByte >= 0 ? 1 : 0,
-                        pendingByte >= 0 ? buffer.length - 1 : buffer.length)) != -1) {
-                    if (pendingByte >= 0) {
-                        buffer[0] = (byte) pendingByte;
-                        length++;
-                        pendingByte = -1;
-                    }
-                    if ((length & 1) != 0) {
-                        pendingByte = buffer[--length] & 0xff;
-                    }
-                    if (length == 0) continue;
+                // SourceDataLine requires writes aligned to whole PCM frames:
+                // 4 bytes for stereo 16-bit, not merely an even byte count.
+                int frameSize = pcmFormat.getFrameSize();
+                if (frameSize <= 0) throw new IllegalArgumentException("OGG 音訊影格大小無效");
+                byte[] buffer = new byte[8192 + frameSize];
+                int pending = 0;
+                while (!session.closed.get()) {
+                    int read = pcm.read(buffer, pending, buffer.length - pending);
+                    if (read == -1) break;
+                    if (read == 0) continue;
+                    int total = pending + read;
+                    int aligned = total - total % frameSize;
+                    int remainder = total - aligned;
                     double volume = ClientRadioVolume.get() / 100.0;
-                    for (int i = 0; i + 1 < length; i += 2) {
+                    for (int i = 0; i + 1 < aligned; i += 2) {
                         short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
                         short scaled = clampPcm(sample * volume);
                         buffer[i] = (byte) scaled;
                         buffer[i + 1] = (byte) (scaled >>> 8);
                     }
-                    if (!session.closed.get()) output.write(buffer, 0, length);
+                    if (aligned > 0 && !session.closed.get()) output.write(buffer, 0, aligned);
+                    // Preserve a partial frame without corrupting the next chunk.
+                    if (remainder > 0) System.arraycopy(buffer, aligned, buffer, 0, remainder);
+                    pending = remainder;
                 }
             }
         }
@@ -326,19 +328,19 @@ public final class StandaloneRadioPlayer {
                 throw new IllegalArgumentException("AAC 音訊格式不支援");
             }
             AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, pcm.isBigEndian());
-            SourceDataLine output = session.line;
+            SourceDataLine output = session.getLine();
             // HE-AAC can switch output rate after SBR initializes. Reopen the output
             // device rather than sending differently formatted PCM into an old line.
             if (output == null || !output.getFormat().matches(format)) {
                 if (output != null) {
-                    session.line = null;
+                    session.setLine(null);
                     output.stop();
                     output.flush();
                     output.close();
                 }
                 output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
                 output.open(format, 32768);
-                session.line = output;
+                session.setLine(output);
                 if (session.closed.get()) {
                     output.close();
                     return;
@@ -370,33 +372,85 @@ public final class StandaloneRadioPlayer {
     private static final class Session {
         final String url;
         final AtomicBoolean closed = new AtomicBoolean();
-        volatile HttpURLConnection connection;
-        volatile InputStream input;
-        volatile SourceDataLine line;
+        private final Object resources = new Object();
+        private HttpURLConnection connection;
+        private InputStream input;
+        private SourceDataLine line;
         private final AtomicBoolean released = new AtomicBoolean();
+
         Session(String url) { this.url = url; }
+
+        // A stop can happen between openConnection()/AudioSystem.getLine()
+        // and publishing the resource. Reject late resources immediately so
+        // they cannot escape the one-shot cleanup thread.
+        void setConnection(HttpURLConnection next) {
+            boolean reject;
+            synchronized (resources) {
+                reject = closed.get();
+                if (!reject) connection = next;
+            }
+            if (reject && next != null) next.disconnect();
+        }
+
+        void setInput(InputStream next) {
+            boolean reject;
+            synchronized (resources) {
+                reject = closed.get();
+                if (!reject) input = next;
+            }
+            if (reject && next != null) {
+                try { next.close(); } catch (Exception ignored) {}
+            }
+        }
+
+        void setLine(SourceDataLine next) {
+            boolean reject;
+            synchronized (resources) {
+                reject = closed.get();
+                if (!reject) line = next;
+            }
+            if (reject && next != null) {
+                try { next.close(); } catch (Exception ignored) {}
+            }
+        }
+
+        SourceDataLine getLine() {
+            synchronized (resources) { return line; }
+        }
+
         void cancel() {
             if (!closed.compareAndSet(false, true)) return;
             Thread worker = new Thread(this::release, "PersonalShelter-Radio-Stop");
             worker.setDaemon(true);
             worker.start();
         }
+
         void close() {
             closed.set(true);
             release();
         }
+
         private void release() {
             if (!released.compareAndSet(false, true)) return;
-            // Stop audio output first so a blocked write cannot keep an old station audible.
-            SourceDataLine audio = line;
+            SourceDataLine audio;
+            HttpURLConnection network;
+            InputStream stream;
+            synchronized (resources) {
+                audio = line;
+                network = connection;
+                stream = input;
+                line = null;
+                connection = null;
+                input = null;
+            }
+            // Do potentially blocking cleanup off the client thread.
             if (audio != null) {
                 try { audio.stop(); } catch (Exception ignored) {}
                 try { audio.flush(); } catch (Exception ignored) {}
                 try { audio.close(); } catch (Exception ignored) {}
             }
-            // Disconnect before closing the stream to interrupt network reads promptly.
-            if (connection != null) connection.disconnect();
-            try { if (input != null) input.close(); } catch (Exception ignored) {}
+            if (network != null) network.disconnect();
+            try { if (stream != null) stream.close(); } catch (Exception ignored) {}
         }
     }
 }
