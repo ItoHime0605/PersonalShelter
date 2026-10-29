@@ -224,10 +224,20 @@ public final class StandaloneRadioPlayer {
                     status = "播放中";
                     ClientRadioPlaybackStatus.set(status);
                 }
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[8193];
                 int length;
-                while (!session.closed.get() && (length = pcm.read(buffer)) != -1) {
-                    if ((length & 1) != 0) throw new IllegalStateException("音訊資料長度異常");
+                int pendingByte = -1;
+                while (!session.closed.get() && (length = pcm.read(buffer, pendingByte >= 0 ? 1 : 0,
+                        pendingByte >= 0 ? buffer.length - 1 : buffer.length)) != -1) {
+                    if (pendingByte >= 0) {
+                        buffer[0] = (byte) pendingByte;
+                        length++;
+                        pendingByte = -1;
+                    }
+                    if ((length & 1) != 0) {
+                        pendingByte = buffer[--length] & 0xff;
+                    }
+                    if (length == 0) continue;
                     double volume = ClientRadioVolume.get() / 100.0;
                     for (int i = 0; i + 1 < length; i += 2) {
                         short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
