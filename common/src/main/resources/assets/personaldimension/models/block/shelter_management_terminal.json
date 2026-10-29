@@ -1,14 +1,14 @@
 {
   "textures": {
-    "particle": "minecraft:block/green_terracotta",
-    "metal": "minecraft:block/green_terracotta",
+    "particle": "personaldimension:block/terminal_metal",
+    "metal": "personaldimension:block/terminal_metal",
     "keyboard": "personaldimension:block/terminal_keyboard",
     "screen": "personaldimension:block/terminal_screen",
-    "rust": "minecraft:block/cut_copper",
-    "dark": "minecraft:block/polished_deepslate",
+    "rust": "minecraft:block/exposed_cut_copper",
+    "dark": "minecraft:block/black_concrete",
     "indicator": "minecraft:block/redstone_block",
     "rubber": "minecraft:block/black_concrete",
-    "warning": "minecraft:block/yellow_terracotta"
+    "warning": "minecraft:block/yellow_concrete"
   },
   "elements": [
     {
