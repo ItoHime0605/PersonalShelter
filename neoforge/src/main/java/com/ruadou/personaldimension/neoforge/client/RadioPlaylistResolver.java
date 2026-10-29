@@ -54,22 +54,35 @@ public final class RadioPlaylistResolver {
         if (!path.endsWith(".m3u") && !path.endsWith(".m3u8") && !path.endsWith(".pls")) {
             return uri.toString();
         }
-        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-        registerConnection.accept(connection);
-        if (cancelled.getAsBoolean()) {
-            connection.disconnect();
-            registerConnection.accept(null);
-            throw new IOException("電台連線已取消");
-        }
-        connection.setConnectTimeout(TIMEOUT_MS);
-        connection.setReadTimeout(TIMEOUT_MS);
-        connection.setInstanceFollowRedirects(false);
-        connection.setRequestProperty("User-Agent", "PersonalShelter/Radio");
+        HttpURLConnection connection = null;
         try {
-            int status = connection.getResponseCode();
-            if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
-            if (status != HttpURLConnection.HTTP_OK) {
-                throw new IOException("Radio playlist HTTP status: " + status);
+            for (int redirects = 0; redirects <= 3; redirects++) {
+                if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
+                connection = (HttpURLConnection) uri.toURL().openConnection();
+                registerConnection.accept(connection);
+                if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
+                connection.setConnectTimeout(TIMEOUT_MS);
+                connection.setReadTimeout(TIMEOUT_MS);
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestProperty("User-Agent", "PersonalShelter/Radio");
+                int status = connection.getResponseCode();
+                if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
+                if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {
+                    if (redirects == 3) throw new IOException("電台播放清單轉址次數過多");
+                    String location = connection.getHeaderField("Location");
+                    if (location == null || location.isBlank()) throw new IOException("電台播放清單轉址缺少網址");
+                    URI next = RadioUrlSecurity.requirePublicHttpUrl(uri.resolve(location).toString());
+                    if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
+                    connection.disconnect();
+                    registerConnection.accept(null);
+                    connection = null;
+                    uri = next;
+                    continue;
+                }
+                if (status != HttpURLConnection.HTTP_OK) {
+                    throw new IOException("Radio playlist HTTP status: " + status);
+                }
+                break;
             }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
@@ -100,7 +113,7 @@ public final class RadioPlaylistResolver {
             }
             throw new IOException("Radio playlist contains no valid stream");
         } finally {
-            connection.disconnect();
+            if (connection != null) connection.disconnect();
             registerConnection.accept(null);
         }
     }
