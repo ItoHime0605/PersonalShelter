@@ -51,6 +51,10 @@ dependencies {
     implementation "javazoom:jlayer:1.0.1"
     shadowBundle "javazoom:jlayer:1.0.1"
 
+    // AAC ADTS decoder bundled directly; no OpenFM installation required.
+    implementation "de.sfuhrm:jaad:0.8.7"
+    shadowBundle "de.sfuhrm:jaad:0.8.7"
+
     // Ogg Vorbis Java Sound SPI, bundled with the client mod.
     implementation "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
     shadowBundle "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
