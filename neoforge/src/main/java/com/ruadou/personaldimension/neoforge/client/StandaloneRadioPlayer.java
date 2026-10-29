@@ -91,6 +91,11 @@ public final class StandaloneRadioPlayer {
             String url = RadioPlaylistResolver.resolve(session.url);
             if (session.closed.get()) return;
             URI uri = URI.create(url);
+            String scheme = uri.getScheme();
+            if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))
+                    || uri.getHost() == null || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException("電台網址僅支援 HTTP 或 HTTPS，且不得包含帳號密碼");
+            }
             String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
             if (path.endsWith(".opus") || path.endsWith(".aac")
                     || path.endsWith(".m4a") || path.endsWith(".mp4")) {
