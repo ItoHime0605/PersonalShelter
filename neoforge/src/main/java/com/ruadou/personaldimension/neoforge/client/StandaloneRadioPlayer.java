@@ -93,7 +93,8 @@ public final class StandaloneRadioPlayer {
 
     private static void play(Session session) {
         try {
-            String url = RadioPlaylistResolver.resolve(session.url);
+            String url = RadioPlaylistResolver.resolve(session.url, session.closed::get,
+                    connection -> session.connection = connection);
             if (session.closed.get()) return;
             // DNS and address checks happen off-thread, before opening any socket.
             URI uri = RadioUrlSecurity.requirePublicHttpUrl(url);
