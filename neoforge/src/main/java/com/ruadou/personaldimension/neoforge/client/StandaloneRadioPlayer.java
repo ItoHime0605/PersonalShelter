@@ -103,21 +103,40 @@ public final class StandaloneRadioPlayer {
                     || path.endsWith(".m4a") || path.endsWith(".mp4")) {
                 throw new IllegalArgumentException("目前不支援此音訊格式");
             }
-            HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
-            session.connection = conn;
-            if (session.closed.get()) {
-                conn.disconnect();
-                return;
-            }
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(8000);
-            conn.setInstanceFollowRedirects(false);
-            conn.setRequestProperty("Icy-MetaData", "0");
-            conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
-            int responseCode = conn.getResponseCode();
-            if (session.closed.get()) return;
-            if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
-                throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
+            HttpURLConnection conn = null;
+            for (int redirects = 0; redirects <= 3; redirects++) {
+                if (session.closed.get()) return;
+                conn = (HttpURLConnection) uri.toURL().openConnection();
+                session.connection = conn;
+                if (session.closed.get()) return;
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(8000);
+                conn.setInstanceFollowRedirects(false);
+                conn.setRequestProperty("Icy-MetaData", "0");
+                conn.setRequestProperty("User-Agent", "PersonalShelter/Radio");
+                int responseCode = conn.getResponseCode();
+                if (session.closed.get()) return;
+                if (responseCode == 301 || responseCode == 302 || responseCode == 303
+                        || responseCode == 307 || responseCode == 308) {
+                    if (redirects == 3) throw new IllegalStateException("電台轉址次數過多");
+                    String location = conn.getHeaderField("Location");
+                    if (location == null || location.isBlank()) throw new IllegalStateException("電台轉址缺少目標網址");
+                    URI target = uri.resolve(location);
+                    String targetScheme = target.getScheme();
+                    if (targetScheme == null || (!targetScheme.equalsIgnoreCase("http")
+                            && !targetScheme.equalsIgnoreCase("https"))
+                            || target.getHost() == null || target.getUserInfo() != null) {
+                        throw new IllegalArgumentException("電台轉址目標不是有效的 HTTP／HTTPS 網址");
+                    }
+                    conn.disconnect();
+                    session.connection = null;
+                    uri = target;
+                    continue;
+                }
+                if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
+                    throw new IllegalStateException("電台伺服器回應 HTTP " + responseCode);
+                }
+                break;
             }
             String contentType = conn.getContentType();
             if (contentType != null) {
