@@ -38,8 +38,8 @@ public final class RadioUrlSecurity {
             throw new UnknownHostException(uri.getHost());
         }
         // Reject the entire hostname if even one DNS answer is non-public.
-        for (InetAddress address : addresses) {
-            if (!isPublicAddress(address)) {
+        for (InetAddress resolved : addresses) {
+            if (!isPublicAddress(resolved)) {
                 throw new IOException("電台主機解析到本機或內部網路，已拒絕連線");
             }
         }
