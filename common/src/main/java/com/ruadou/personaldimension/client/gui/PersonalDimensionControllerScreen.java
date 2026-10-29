@@ -532,6 +532,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     }
 
     /** 內建與自訂電台共用分頁，伺服器端再次驗證 ID 與地主身分。 */
+    /** Compact radio controls: every widget and the playback status stay inside the 250px panel. */
     private void addRadioSettings() {
         if (!radioEditingId.isBlank()) { addRadioEditor(); return; }
         int x = contentLeft() + PADDING;
@@ -539,18 +540,23 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         int width = contentWidth() - 2 * PADDING;
         int half = (width - 6) / 2;
         this.addRenderableWidget(new FlatButton(Component.literal("返回設定"),
-                x, y, half, 20, b -> backToSettingsHome()));
+                x, y, half, 19, b -> backToSettingsHome()));
         this.addRenderableWidget(new FlatButton(Component.literal("重新整理"),
-                x + half + 6, y, half, 20,
+                x + half + 6, y, half, 19,
                 b -> Platform.sendToServer(new RequestLandRadioPacket())));
         this.addRenderableWidget(new FlatButton(Component.literal("關閉土地電台"),
-                x, y + 25, width, 20,
+                x, y + 23, width, 19,
                 b -> Platform.sendToServer(new SetLandRadioPacket(false, ClientLandRadioData.stationId()))));
-        this.addRenderableWidget(new FlatButton(Component.literal("內建電台"),
-                x, y + 49, half, 20, b -> { radioCustomPage = false; radioPage = 0; rebuildWidgets(); }));
-        this.addRenderableWidget(new FlatButton(Component.literal("管理自訂電台"),
-                x + half + 6, y + 49, half, 20,
-                b -> { radioCustomPage = true; radioPage = 0; rebuildWidgets(); }));
+        FlatButton builtIn = new FlatButton(Component.literal("內建電台"),
+                x, y + 46, half, 19, b -> { radioCustomPage = false; radioPage = 0; rebuildWidgets(); });
+        builtIn.setSelected(!radioCustomPage);
+        this.addRenderableWidget(builtIn);
+        FlatButton customTab = new FlatButton(Component.literal("管理自訂電台"),
+                x + half + 6, y + 46, half, 19,
+                b -> { radioCustomPage = true; radioPage = 0; rebuildWidgets(); });
+        customTab.setSelected(radioCustomPage);
+        this.addRenderableWidget(customTab);
+
         int pageSize = 3;
         var custom = ClientLandRadioData.customStations();
         int count = radioCustomPage ? custom.size() : DefaultRadioStations.ENTRIES.size();
@@ -560,52 +566,57 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             int row = index % pageSize;
             String id = radioCustomPage ? custom.get(index).id() : DefaultRadioStations.ENTRIES.get(index).id();
             String name = radioCustomPage ? custom.get(index).name() : DefaultRadioStations.ENTRIES.get(index).name();
-            int rowY = y + 74 + row * 25;
+            int rowY = y + 69 + row * 22;
             int selectWidth = radioCustomPage ? width - 86 : width;
             FlatButton selection = new FlatButton(Component.literal(name),
-                    x, rowY, selectWidth, 20,
+                    x, rowY, selectWidth, 19,
                     b -> Platform.sendToServer(new SetLandRadioPacket(true, id)));
             selection.setSelected(ClientLandRadioData.enabled() && id.equals(ClientLandRadioData.stationId()));
             this.addRenderableWidget(selection);
             if (radioCustomPage) {
                 this.addRenderableWidget(new FlatButton(Component.literal("編輯"),
-                        x + width - 82, rowY, 39, 20,
-                        b -> { radioEditingId = id; rebuildWidgets(); }));
+                        x + width - 82, rowY, 39, 19,
+                        b -> { radioEditingId = id; radioEditorError = ""; rebuildWidgets(); }));
                 this.addRenderableWidget(new FlatButton(Component.literal("刪除"),
-                        x + width - 40, rowY, 40, 20,
+                        x + width - 40, rowY, 40, 19,
                         b -> Platform.sendToServer(new EditLandRadioStationPacket("delete", id, "", ""))));
             }
         }
         FlatButton previous = new FlatButton(Component.literal("上一頁"),
-                x, y + 153, half, 20, b -> { radioPage--; rebuildWidgets(); });
+                x, y + 138, half, 19, b -> { radioPage--; rebuildWidgets(); });
         previous.active = radioPage > 0;
         this.addRenderableWidget(previous);
         FlatButton next = new FlatButton(Component.literal("下一頁"),
-                x + half + 6, y + 153, half, 20, b -> { radioPage++; rebuildWidgets(); });
+                x + half + 6, y + 138, half, 19, b -> { radioPage++; rebuildWidgets(); });
         next.active = radioPage + 1 < pageCount;
         this.addRenderableWidget(next);
         if (radioCustomPage) {
             FlatButton add = new FlatButton(Component.literal("新增電台（" + custom.size() + "/32）"),
-                    x, y + 177, half, 19,
+                    x, y + 160, half, 19,
                     b -> { radioEditingId = "new"; radioEditorError = ""; rebuildWidgets(); });
             add.active = custom.size() < LandRadioSettings.MAX_STATIONS;
             this.addRenderableWidget(add);
-            // Keep the personal listening toggle accessible on both station tabs.
-            this.addRenderableWidget(new FlatButton(Component.literal("收聽：" + (ClientRadioListening.isListening() ? "是" : "否")),
-                    x + half + 6, y + 177, half, 19,
-                    b -> { ClientRadioListening.setListening(!ClientRadioListening.isListening()); rebuildWidgets(); }));
-        } else {
-            this.addRenderableWidget(new FlatButton(Component.literal("收聽：" + (ClientRadioListening.isListening() ? "是" : "否")),
-                    x, y + 177, width, 20,
-                    b -> { ClientRadioListening.setListening(!ClientRadioListening.isListening()); rebuildWidgets(); }));
         }
+        int listeningX = radioCustomPage ? x + half + 6 : x;
+        int listeningWidth = radioCustomPage ? half : width;
+        this.addRenderableWidget(new FlatButton(Component.literal("收聽：" + (ClientRadioListening.isListening() ? "是" : "否")),
+                listeningX, y + 160, listeningWidth, 19,
+                b -> { ClientRadioListening.setListening(!ClientRadioListening.isListening()); rebuildWidgets(); }));
         this.addRenderableWidget(new FlatButton(Component.literal("－"),
-                x, y + 202, 38, 16,
+                x, y + 182, 38, 15,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() - 1); rebuildWidgets(); }));
-        addVolumeSlider(x + 42, y + 202, width - 84, 16);
+        addVolumeSlider(x + 42, y + 182, width - 84, 15);
         this.addRenderableWidget(new FlatButton(Component.literal("＋"),
-                x + width - 38, y + 202, 38, 16,
+                x + width - 38, y + 182, 38, 15,
                 b -> { ClientRadioVolume.set(ClientRadioVolume.get() + 1); rebuildWidgets(); }));
+    }
+
+    /** Avoid painting long station IDs and playback errors beyond the panel border. */
+    private String clipRadioText(String value, int maxWidth) {
+        if (this.font.width(value) <= maxWidth) return value;
+        int end = value.length();
+        while (end > 0 && this.font.width(value.substring(0, end) + "…") > maxWidth) end--;
+        return value.substring(0, end) + "…";
     }
 
     /** Local, persistent color theme chooser. */
@@ -818,14 +829,22 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 }
                 return;
             }
-            int y = contentTop() + PADDING + 211;
-            graphics.drawString(this.font, Component.literal("私人土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")),
-                x, y, ModernStyle.TEXT, false);
+            // These two lines fit beneath the volume slider, inside the panel.
+            int y = contentTop() + PADDING + 200;
+            int maxWidth = contentWidth() - 2 * PADDING;
             String id = ClientLandRadioData.stationId();
-            graphics.drawString(this.font, Component.literal("目前頻道：" + (id.isBlank() ? "未選擇" : id)),
-                x, y + 12, ModernStyle.TEXT_SUB, false);
-            graphics.drawString(this.font, Component.literal("播放狀態：" + ClientRadioPlaybackStatus.get()),
-                x, y + 24, ModernStyle.TEXT_SUB, false);
+            String stationName = DefaultRadioStations.ENTRIES.stream()
+                    .filter(station -> station.id().equals(id)).map(station -> station.name())
+                    .findFirst().orElseGet(() -> ClientLandRadioData.customStations().stream()
+                            .filter(station -> station.id().equals(id)).map(station -> station.name())
+                            .findFirst().orElse(id));
+            String stationText = "土地電台：" + (ClientLandRadioData.enabled() ? "開啟" : "關閉")
+                    + "｜" + (id.isBlank() ? "未選擇" : stationName);
+            graphics.drawString(this.font, Component.literal(clipRadioText(stationText, maxWidth)),
+                    x, y, ModernStyle.TEXT, false);
+            graphics.drawString(this.font, Component.literal(clipRadioText(
+                    "本機播放：" + ClientRadioPlaybackStatus.get(), maxWidth)),
+                    x, y + 12, ModernStyle.TEXT_SUB, false);
 
         } else if (this.activeTab == Tab.TELEPORT && this.teleportPanel != null) {
             this.teleportPanel.render(graphics, mouseX, mouseY);
