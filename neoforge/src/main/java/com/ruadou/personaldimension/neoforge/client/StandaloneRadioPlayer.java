@@ -28,8 +28,10 @@ public final class StandaloneRadioPlayer {
     private static volatile String currentUrl = "";
     private static volatile long retryAfter;
     private static volatile String failedUrl = "";
+    private static volatile String lastFailure = "";
     private static volatile String status = "已停止";
     public static String status() { return status; }
+    public static String lastFailure() { return lastFailure; }
     private StandaloneRadioPlayer() {}
 
     public static void tick() {
@@ -40,7 +42,10 @@ public final class StandaloneRadioPlayer {
         synchronized (LOCK) {
             if (url.isBlank()) { stopLocked(); return; }
             if (active != null && url.equals(currentUrl)) return;
-            if (!url.equals(failedUrl)) retryAfter = 0;
+            if (!url.equals(failedUrl)) {
+                retryAfter = 0;
+                lastFailure = "";
+            }
             if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) return;
             stopLocked();
             Session session = new Session(url);
@@ -132,6 +137,7 @@ public final class StandaloneRadioPlayer {
             }
         } catch (Exception ex) {
             if (!session.closed.get() && active == session) {
+                lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
                 status = "播放失敗：" + ex.getClass().getSimpleName();
                 ClientRadioPlaybackStatus.set(status);
             }
