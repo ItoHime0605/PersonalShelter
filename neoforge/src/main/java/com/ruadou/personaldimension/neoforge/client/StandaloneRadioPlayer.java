@@ -218,6 +218,7 @@ public final class StandaloneRadioPlayer {
                 byte[] buffer = new byte[8192];
                 int length;
                 while (!session.closed.get() && (length = pcm.read(buffer)) != -1) {
+                    if ((length & 1) != 0) throw new IllegalStateException("音訊資料長度異常");
                     double volume = ClientRadioVolume.get() / 100.0;
                     for (int i = 0; i + 1 < length; i += 2) {
                         short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
