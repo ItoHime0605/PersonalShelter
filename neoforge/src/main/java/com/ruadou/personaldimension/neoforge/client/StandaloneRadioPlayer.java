@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Locale;
 
-/** Independent MP3 radio engine; network and decoding never run on the game thread. */
+/** Independent MP3, Ogg and ADTS AAC radio engine; decoding never runs on the game thread. */
 public final class StandaloneRadioPlayer {
     private static final Object LOCK = new Object();
     private static volatile Session active;
@@ -35,6 +35,8 @@ public final class StandaloneRadioPlayer {
     private static volatile String status = "已停止";
     private static final long RETRY_DELAY_MS = 10_000L;
     public static String status() { return status; }
+    /** True only while the active session has started audio output. */
+    public static boolean isPlaying() { return active != null && "播放中".equals(status); }
     public static String lastFailure() { return lastFailure; }
     private StandaloneRadioPlayer() {}
 
@@ -287,38 +289,68 @@ public final class StandaloneRadioPlayer {
         }
     }
 
-    /** Decode ADTS AAC directly; this stream belongs to the current radio session. */
+    /** Decode ADTS AAC on the radio worker, without blocking Minecraft's client tick. */
     private static void playAac(Session session, InputStream input) throws Exception {
         ADTSDemultiplexer adts = new ADTSDemultiplexer(input);
         net.sourceforge.jaad.aac.Decoder decoder = new net.sourceforge.jaad.aac.Decoder(adts.getDecoderSpecificInfo());
         net.sourceforge.jaad.aac.SampleBuffer pcm = new net.sourceforge.jaad.aac.SampleBuffer();
         while (!session.closed.get()) {
-            byte[] frame = adts.readNextFrame();
+            byte[] frame;
+            try {
+                // JAAD 0.8.7 throws EOFException rather than returning null at the end
+                // of an ADTS stream; treat it as a disconnect and let retry logic reconnect.
+                frame = adts.readNextFrame();
+            } catch (java.io.EOFException endOfStream) {
+                break;
+            }
             if (frame == null || session.closed.get()) break;
             decoder.decodeFrame(frame, pcm);
             if (session.closed.get()) break;
-            if (pcm.getBitsPerSample() != 16) throw new IllegalArgumentException("AAC 音訊位元深度不支援");
-            AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, true);
-            if (session.line == null) {
-                SourceDataLine line = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
-                line.open(format, 32768);
-                session.line = line;
-                if (session.closed.get()) return;
-                line.start();
+            byte[] bytes = pcm.getData();
+            // Some AAC frames do not produce samples (e.g. while initializing SBR).
+            if (bytes.length == 0) continue;
+            if (pcm.getBitsPerSample() != 16 || pcm.getSampleRate() <= 0 || pcm.getChannels() <= 0) {
+                throw new IllegalArgumentException("AAC 音訊格式不支援");
+            }
+            AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, pcm.isBigEndian());
+            SourceDataLine output = session.line;
+            // HE-AAC can switch output rate after SBR initializes. Reopen the output
+            // device rather than sending differently formatted PCM into an old line.
+            if (output == null || !output.getFormat().matches(format)) {
+                if (output != null) {
+                    session.line = null;
+                    output.stop();
+                    output.flush();
+                    output.close();
+                }
+                output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
+                output.open(format, 32768);
+                session.line = output;
+                if (session.closed.get()) {
+                    output.close();
+                    return;
+                }
+                output.start();
+                if (session.closed.get()) {
+                    output.close();
+                    return;
+                }
                 if (active == session) {
                     status = "播放中";
                     ClientRadioPlaybackStatus.set(status);
                 }
             }
-            byte[] bytes = pcm.getData();
             double volume = ClientRadioVolume.get() / 100.0;
+            boolean bigEndian = pcm.isBigEndian();
             for (int i = 0; i + 1 < bytes.length; i += 2) {
-                short value = (short) ((bytes[i] << 8) | (bytes[i + 1] & 255));
+                short value = bigEndian
+                        ? (short) ((bytes[i] << 8) | (bytes[i + 1] & 255))
+                        : (short) ((bytes[i] & 255) | (bytes[i + 1] << 8));
                 short scaled = clampPcm(value * volume);
-                bytes[i] = (byte) (scaled >>> 8);
-                bytes[i + 1] = (byte) scaled;
+                bytes[i] = bigEndian ? (byte) (scaled >>> 8) : (byte) scaled;
+                bytes[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
             }
-            if (!session.closed.get()) session.line.write(bytes, 0, bytes.length);
+            if (!session.closed.get()) output.write(bytes, 0, bytes.length);
         }
     }
 
