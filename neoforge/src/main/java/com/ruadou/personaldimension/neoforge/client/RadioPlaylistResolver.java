@@ -82,6 +82,20 @@ public final class RadioPlaylistResolver {
                 if (status != HttpURLConnection.HTTP_OK) {
                     throw new IOException("Radio playlist HTTP status: " + status);
                 }
+                // Some playlist URLs redirect directly to an audio stream. Never
+                // consume its binary payload with the text playlist parser.
+                String finalPath = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
+                String type = connection.getContentType();
+                String mediaType = type == null ? "" : type.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
+                boolean playlistPath = finalPath.endsWith(".m3u") || finalPath.endsWith(".m3u8") || finalPath.endsWith(".pls");
+                boolean playlistType = mediaType.contains("mpegurl") || mediaType.contains("scpls")
+                        || mediaType.contains("playlist");
+                boolean audioType = mediaType.startsWith("audio/") && !playlistType;
+                if (audioType || (!playlistPath && !playlistType
+                        && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
+                        || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga")))) {
+                    return uri.toString();
+                }
                 break;
             }
             try (BufferedReader reader = new BufferedReader(
