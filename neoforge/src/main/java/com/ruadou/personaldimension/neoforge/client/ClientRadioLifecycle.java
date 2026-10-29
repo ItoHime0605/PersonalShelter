@@ -23,5 +23,11 @@ public final class ClientRadioLifecycle {
         }
         wasInWorld = inWorld;
         StandaloneRadioPlayer.tick();
+        // Silence only Minecraft's ambient background music while a land radio
+        // is actually playing. Keep sound effects, records and user volume settings.
+        // When radio playback stops, vanilla music scheduling resumes normally.
+        if (inWorld && StandaloneRadioPlayer.isPlaying()) {
+            mc.getMusicManager().stopPlaying();
+        }
     }
 }
