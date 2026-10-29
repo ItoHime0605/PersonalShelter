@@ -280,14 +280,16 @@ public final class StandaloneRadioPlayer {
         }
         private void release() {
             if (!released.compareAndSet(false, true)) return;
-            try { if (input != null) input.close(); } catch (Exception ignored) {}
-            if (connection != null) connection.disconnect();
+            // Stop audio output first so a blocked write cannot keep an old station audible.
             SourceDataLine audio = line;
             if (audio != null) {
                 try { audio.stop(); } catch (Exception ignored) {}
                 try { audio.flush(); } catch (Exception ignored) {}
                 try { audio.close(); } catch (Exception ignored) {}
             }
+            // Disconnect before closing the stream to interrupt network reads promptly.
+            if (connection != null) connection.disconnect();
+            try { if (input != null) input.close(); } catch (Exception ignored) {}
         }
     }
 }
