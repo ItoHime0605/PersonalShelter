@@ -50,6 +50,7 @@ public final class StandaloneRadioPlayer {
             if (active != null && url.equals(currentUrl)) return;
             if (!url.equals(failedUrl)) {
                 retryAfter = 0;
+                failedUrl = "";
                 lastFailure = "";
             }
             if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) {
