@@ -153,7 +153,7 @@ public final class StandaloneRadioPlayer {
                     byte[] bytes = new byte[length * 2];
                     double volume = ClientRadioVolume.get() / 100.0;
                     for (int i = 0; i < length; i++) {
-                        short value = (short) Math.round(samples[i] * volume);
+                        short value = clampPcm(samples[i] * volume);
                         bytes[i * 2] = (byte) value;
                         bytes[i * 2 + 1] = (byte) (value >>> 8);
                     }
@@ -192,6 +192,10 @@ public final class StandaloneRadioPlayer {
         }
     }
 
+    private static short clampPcm(double sample) {
+        return (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, Math.round(sample)));
+    }
+
     private static void playOgg(Session session, InputStream input) throws Exception {
         try (AudioInputStream encoded = AudioSystem.getAudioInputStream(input)) {
             AudioFormat source = encoded.getFormat();
@@ -217,7 +221,7 @@ public final class StandaloneRadioPlayer {
                     double volume = ClientRadioVolume.get() / 100.0;
                     for (int i = 0; i + 1 < length; i += 2) {
                         short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
-                        short scaled = (short) Math.round(sample * volume);
+                        short scaled = clampPcm(sample * volume);
                         buffer[i] = (byte) scaled;
                         buffer[i + 1] = (byte) (scaled >>> 8);
                     }
