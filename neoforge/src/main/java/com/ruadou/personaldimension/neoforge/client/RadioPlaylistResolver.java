@@ -23,11 +23,14 @@ public final class RadioPlaylistResolver {
     private RadioPlaylistResolver() {}
 
     /** Avoid BufferedReader.readLine allocating an unbounded line before size checks. */
-    private static String readBoundedLine(BufferedReader reader, int remaining) throws IOException {
+    private static String readBoundedLine(BufferedReader reader, int remaining,
+                                          BooleanSupplier cancelled) throws IOException {
         StringBuilder line = new StringBuilder(Math.min(remaining, 256));
         int ch;
-        while ((ch = reader.read()) != -1) {
-            if (ch == '\n') break;
+        while (true) {
+            if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
+            ch = reader.read();
+            if (ch == -1 || ch == '\n') break;
             if (line.length() >= remaining) throw new IOException("Radio playlist too large");
             line.append((char) ch);
         }
@@ -103,7 +106,7 @@ public final class RadioPlaylistResolver {
                 int chars = 0;
                 for (int i = 0; i < MAX_LINES; i++) {
                     if (cancelled.getAsBoolean()) throw new IOException("電台連線已取消");
-                    String line = readBoundedLine(reader, MAX_CHARS - chars);
+                    String line = readBoundedLine(reader, MAX_CHARS - chars, cancelled);
                     if (line == null) break;
                     chars += line.length();
                     line = line.trim();
