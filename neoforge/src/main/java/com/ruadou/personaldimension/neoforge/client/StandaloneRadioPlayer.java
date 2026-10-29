@@ -31,6 +31,8 @@ public final class StandaloneRadioPlayer {
     private static volatile String failedUrl = "";
     private static volatile String lastFailure = "";
     private static volatile String status = "已停止";
+    private static volatile long lastStopRequest;
+    private static final long RETRY_DELAY_MS = 10_000L;
     public static String status() { return status; }
     public static String lastFailure() { return lastFailure; }
     private StandaloneRadioPlayer() {}
@@ -47,7 +49,11 @@ public final class StandaloneRadioPlayer {
                 retryAfter = 0;
                 lastFailure = "";
             }
-            if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) return;
+            if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) {
+                status = "等待重試（" + Math.max(1L, (retryAfter - System.currentTimeMillis() + 999L) / 1000L) + " 秒）";
+                ClientRadioPlaybackStatus.set(status);
+                return;
+            }
             stopLocked();
             Session session = new Session(url);
             active = session;
@@ -68,7 +74,10 @@ public final class StandaloneRadioPlayer {
         Session old = active;
         active = null;
         currentUrl = "";
-        if (old != null) old.cancel();
+        if (old != null) {
+            lastStopRequest = System.currentTimeMillis();
+            old.cancel();
+        }
         status = "已停止";
         ClientRadioPlaybackStatus.set(status);
     }
@@ -156,7 +165,7 @@ public final class StandaloneRadioPlayer {
                     active = null;
                     currentUrl = "";
                     failedUrl = session.url;
-                    retryAfter = System.currentTimeMillis() + 10_000L;
+                    retryAfter = System.currentTimeMillis() + RETRY_DELAY_MS;
                     if (!interrupted && !status.startsWith("播放失敗")) {
                         status = "連線中斷，稍後重試";
                         ClientRadioPlaybackStatus.set(status);
