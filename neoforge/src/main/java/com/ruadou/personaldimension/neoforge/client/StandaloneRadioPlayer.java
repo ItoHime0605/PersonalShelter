@@ -52,8 +52,11 @@ public final class StandaloneRadioPlayer {
                 lastFailure = "";
             }
             if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) {
-                status = "等待重試（" + Math.max(1L, (retryAfter - System.currentTimeMillis() + 999L) / 1000L) + " 秒）";
-                ClientRadioPlaybackStatus.set(status);
+                String waiting = "等待重試（" + Math.max(1L, (retryAfter - System.currentTimeMillis() + 999L) / 1000L) + " 秒）";
+                if (!waiting.equals(status)) {
+                    status = waiting;
+                    ClientRadioPlaybackStatus.set(status);
+                }
                 return;
             }
             stopLocked();
