@@ -15,6 +15,7 @@ import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.SampleBuffer;
 import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.Header;
+import net.sourceforge.jaad.adts.ADTSDemultiplexer;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
@@ -134,18 +135,17 @@ public final class StandaloneRadioPlayer {
                 break;
             }
             String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
-            if (path.endsWith(".opus") || path.endsWith(".aac")
-                    || path.endsWith(".m4a") || path.endsWith(".mp4")) {
+            if (path.endsWith(".opus") || path.endsWith(".m4a") || path.endsWith(".mp4")) {
                 throw new IllegalArgumentException("目前不支援此音訊格式");
             }
             String contentType = conn.getContentType();
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                if (type.contains("aac") || type.contains("mp4")
-                        || type.contains("opus")) {
+                if (type.contains("mp4") || type.contains("opus")) {
                     throw new IllegalArgumentException("Unsupported radio stream format: " + type);
                 }
             }
+            boolean aac = path.endsWith(".aac") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("aac"));
             boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
             try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(conn.getInputStream()), 4)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
@@ -156,6 +156,13 @@ public final class StandaloneRadioPlayer {
                 boolean oggSignature = signatureLength == 4
                         && signature[0] == 'O' && signature[1] == 'g'
                         && signature[2] == 'g' && signature[3] == 'S';
+                boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
+                        && (signature[1] & 0xf6) == 0xf0;
+                if (aac || adtsSignature) {
+                    session.input = input;
+                    if (!session.closed.get()) playAac(session, input);
+                    return;
+                }
                 if (ogg || oggSignature) {
                     session.input = input;
                     if (!session.closed.get()) playOgg(session, input);
@@ -277,6 +284,41 @@ public final class StandaloneRadioPlayer {
                     if (!session.closed.get()) output.write(buffer, 0, length);
                 }
             }
+        }
+    }
+
+    /** Decode ADTS AAC directly; this stream belongs to the current radio session. */
+    private static void playAac(Session session, InputStream input) throws Exception {
+        ADTSDemultiplexer adts = new ADTSDemultiplexer(input);
+        net.sourceforge.jaad.aac.Decoder decoder = new net.sourceforge.jaad.aac.Decoder(adts.getDecoderSpecificInfo());
+        net.sourceforge.jaad.aac.SampleBuffer pcm = new net.sourceforge.jaad.aac.SampleBuffer();
+        while (!session.closed.get()) {
+            byte[] frame = adts.readNextFrame();
+            if (frame == null || session.closed.get()) break;
+            decoder.decodeFrame(frame, pcm);
+            if (session.closed.get()) break;
+            if (pcm.getBitsPerSample() != 16) throw new IllegalArgumentException("AAC 音訊位元深度不支援");
+            AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, true);
+            if (session.line == null) {
+                SourceDataLine line = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
+                line.open(format, 32768);
+                session.line = line;
+                if (session.closed.get()) return;
+                line.start();
+                if (active == session) {
+                    status = "播放中";
+                    ClientRadioPlaybackStatus.set(status);
+                }
+            }
+            byte[] bytes = pcm.getData();
+            double volume = ClientRadioVolume.get() / 100.0;
+            for (int i = 0; i + 1 < bytes.length; i += 2) {
+                short value = (short) ((bytes[i] << 8) | (bytes[i + 1] & 255));
+                short scaled = clampPcm(value * volume);
+                bytes[i] = (byte) (scaled >>> 8);
+                bytes[i + 1] = (byte) scaled;
+            }
+            if (!session.closed.get()) session.line.write(bytes, 0, bytes.length);
         }
     }
 
