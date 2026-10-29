@@ -168,38 +168,57 @@ public final class StandaloneRadioPlayer {
                 if (session.closed.get()) return;
                 Bitstream stream = new Bitstream(input);
                 Decoder decoder = new Decoder();
+                // Reuse a PCM buffer instead of allocating on every MP3 frame.
+                byte[] bytes = new byte[16384];
                 while (!session.closed.get()) {
                     Header header = stream.readFrame();
                     if (header == null) break;
-                    SampleBuffer pcm = (SampleBuffer) decoder.decodeFrame(header, stream);
-                    if (session.closed.get()) break;
-                    if (session.line == null) {
-                        AudioFormat format = new AudioFormat(pcm.getSampleFrequency(), 16, pcm.getChannelCount(), true, false);
-                        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-                        SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info);
-                        line.open(format, 32768);
-                        session.line = line;
-                        if (session.closed.get()) {
-                            line.close();
-                            return;
+                    try {
+                        SampleBuffer pcm = (SampleBuffer) decoder.decodeFrame(header, stream);
+                        if (session.closed.get()) break;
+                        AudioFormat format = new AudioFormat(pcm.getSampleFrequency(), 16,
+                                pcm.getChannelCount(), true, false);
+                        SourceDataLine output = session.line;
+                        // Some radio streams splice tracks with different sample rates or
+                        // channel counts. Never send their PCM to a stale audio format.
+                        if (output == null || !output.getFormat().matches(format)) {
+                            if (output != null) {
+                                session.line = null;
+                                output.stop();
+                                output.flush();
+                                output.close();
+                            }
+                            output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
+                            output.open(format, 32768);
+                            session.line = output;
+                            if (session.closed.get()) {
+                                output.close();
+                                return;
+                            }
+                            output.start();
+                            if (session.closed.get()) {
+                                output.close();
+                                return;
+                            }
+                            if (active == session) {
+                                status = "播放中";
+                                ClientRadioPlaybackStatus.set(status);
+                            }
                         }
-                        line.start();
-                        if (!session.closed.get() && active == session) {
-                            status = "播放中";
-                            ClientRadioPlaybackStatus.set(status);
+                        short[] samples = pcm.getBuffer();
+                        int length = pcm.getBufferLength();
+                        int byteLength = length * 2;
+                        if (bytes.length < byteLength) bytes = new byte[byteLength];
+                        double volume = ClientRadioVolume.get() / 100.0;
+                        for (int i = 0; i < length; i++) {
+                            short value = clampPcm(samples[i] * volume);
+                            bytes[i * 2] = (byte) value;
+                            bytes[i * 2 + 1] = (byte) (value >>> 8);
                         }
+                        if (!session.closed.get()) output.write(bytes, 0, byteLength);
+                    } finally {
+                        stream.closeFrame();
                     }
-                    short[] samples = pcm.getBuffer();
-                    int length = pcm.getBufferLength();
-                    byte[] bytes = new byte[length * 2];
-                    double volume = ClientRadioVolume.get() / 100.0;
-                    for (int i = 0; i < length; i++) {
-                        short value = clampPcm(samples[i] * volume);
-                        bytes[i * 2] = (byte) value;
-                        bytes[i * 2 + 1] = (byte) (value >>> 8);
-                    }
-                    if (!session.closed.get()) session.line.write(bytes, 0, bytes.length);
-                    stream.closeFrame();
                 }
             }
         } catch (Exception ex) {
