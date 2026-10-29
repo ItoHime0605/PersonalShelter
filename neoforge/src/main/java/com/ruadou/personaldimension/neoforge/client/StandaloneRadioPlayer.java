@@ -31,7 +31,6 @@ public final class StandaloneRadioPlayer {
     private static volatile String failedUrl = "";
     private static volatile String lastFailure = "";
     private static volatile String status = "已停止";
-    private static volatile long lastStopRequest;
     private static final long RETRY_DELAY_MS = 10_000L;
     public static String status() { return status; }
     public static String lastFailure() { return lastFailure; }
@@ -43,7 +42,10 @@ public final class StandaloneRadioPlayer {
                 && mc.level.dimension().location().toString().equals(ClientCurrentLandRadio.dimensionId());
         String url = allowed ? ClientCurrentLandRadio.streamUrl() : "";
         synchronized (LOCK) {
-            if (url.isBlank()) { stopLocked(); return; }
+            if (url.isBlank()) {
+                if (active != null || !currentUrl.isEmpty() || !status.equals("已停止")) stopLocked();
+                return;
+            }
             if (active != null && url.equals(currentUrl)) return;
             if (!url.equals(failedUrl)) {
                 retryAfter = 0;
@@ -75,7 +77,6 @@ public final class StandaloneRadioPlayer {
         active = null;
         currentUrl = "";
         if (old != null) {
-            lastStopRequest = System.currentTimeMillis();
             old.cancel();
         }
         status = "已停止";
