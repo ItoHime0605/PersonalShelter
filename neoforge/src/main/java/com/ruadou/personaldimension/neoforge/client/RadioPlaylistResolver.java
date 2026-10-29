@@ -27,7 +27,7 @@ public final class RadioPlaylistResolver {
         StringBuilder line = new StringBuilder(Math.min(remaining, 256));
         int ch;
         while ((ch = reader.read()) != -1) {
-            if (ch == '\\n') break;
+            if (ch == '\n') break;
             if (line.length() >= remaining) throw new IOException("Radio playlist too large");
             line.append((char) ch);
         }
