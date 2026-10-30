@@ -378,7 +378,9 @@ public final class StandaloneRadioPlayer {
      */
     private static void markPlaying(Session session) {
         synchronized (LOCK) {
-            if (active == session && !session.closed.get() && !"播放中".equals(status)) {
+            if (active == session && !session.closed.get()
+                    && session.getLine() != null && session.getLine().isRunning()
+                    && !"播放中".equals(status)) {
                 status = "播放中";
                 ClientRadioPlaybackStatus.set(status);
             }
@@ -423,11 +425,9 @@ public final class StandaloneRadioPlayer {
                 output.close();
                 return null;
             }
-            output.start();
-            if (session.closed.get()) {
-                output.close();
-                return null;
-            }
+            // Keep the device paused until the decoder has filled half its
+            // actual buffer. Starting an empty line makes brief network stalls
+            // audible even when a large buffer was allocated.
             return output;
         } catch (Exception failure) {
             try { output.close(); } catch (Exception ignored) {}
@@ -450,6 +450,14 @@ public final class StandaloneRadioPlayer {
                 throw new IOException("電台音訊輸出中斷");
             }
             offset += written;
+            // Start only after prebuffering. getBufferSize() reflects the
+            // device's real allocation (which may differ from our request).
+            // Do not restart a line that was closed by stop/switch.
+            if (!output.isRunning() && !session.closed.get()
+                    && output.isOpen()
+                    && output.getBufferSize() - output.available() >= output.getBufferSize() / 2) {
+                output.start();
+            }
         }
     }
 
