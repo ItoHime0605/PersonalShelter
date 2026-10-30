@@ -5,6 +5,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 
 /**
  * 现代深色扁平风格按钮（演示/候选主题）。
@@ -69,9 +70,13 @@ public class ModernButton extends Button {
         }
 
         Font font = Minecraft.getInstance().font;
-        Component label = GuiText.ellipsize(font, this.getMessage(), w - 8);
+        // Minecraft's native bold glyphs improve small Traditional Chinese
+        // button labels without scaling or changing the established layout.
+        // Measure AFTER applying bold; otherwise the label may clip.
+        Component boldMessage = this.getMessage().copy().withStyle(Style.EMPTY.withBold(true));
+        Component label = GuiText.ellipsize(font, boldMessage, w - 8);
         int textX = x + (w - font.width(label)) / 2;
         int textY = y + (h - font.lineHeight) / 2;
-        graphics.drawString(font, label, textX, textY, textColor, false);
+        graphics.drawString(font, label, textX, textY, textColor, true);
     }
 }
