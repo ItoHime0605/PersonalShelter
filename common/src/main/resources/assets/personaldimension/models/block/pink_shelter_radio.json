@@ -1,0 +1,6 @@
+{
+  "parent": "personaldimension:block/shelter_radio",
+  "textures": {
+    "body": "minecraft:block/pink_terracotta"
+  }
+}
