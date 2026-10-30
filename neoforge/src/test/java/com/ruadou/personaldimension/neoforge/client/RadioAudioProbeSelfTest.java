@@ -36,7 +36,7 @@ public final class RadioAudioProbeSelfTest {
     public static void main(String[] args) throws Exception {
         kind(new byte[] {(byte) 0xff, (byte) 0xfb, (byte) 0x90, 0x64},
                 RadioAudioProbe.Kind.MP3);
-        kind(new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80},
+        kind(new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 1, 0, 0},
                 RadioAudioProbe.Kind.ADTS_AAC);
         kind(text("OggS"), RadioAudioProbe.Kind.OGG);
         kind(new byte[] {0, 0, 0, 24, 'f', 't', 'y', 'p', 'M', '4', 'A', ' '},
