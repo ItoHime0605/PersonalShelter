@@ -51,6 +51,18 @@ public final class RadioPcmSelfTest {
         check(RadioPcm.alignedBufferSize(32768, 12) == 32772, "六聲道緩衝區必須對齊");
         invalid(() -> RadioPcm.alignedBufferSize(32768, 0));
         invalid(() -> RadioPcm.alignedBufferSize(0, 4));
+        // Half-step rounding must be symmetric to avoid adding DC offset.
+        short[] tiny = {-3, -1, 0, 1, 3};
+        byte[] symmetric = new byte[10];
+        RadioPcm.fromShorts(tiny, tiny.length, symmetric, 50);
+        check(Arrays.equals(symmetric, new byte[] {
+                (byte) 254, (byte) 255, (byte) 255, (byte) 255,
+                0, 0, 1, 0, 2, 0}), "正負半步音量縮放必須對稱");
+        RadioPcm.fromShorts(new short[] {Short.MIN_VALUE, Short.MAX_VALUE}, 2,
+                symmetric, 100);
+        check(Arrays.equals(Arrays.copyOf(symmetric, 4),
+                new byte[] {0, (byte) 128, (byte) 255, 127}),
+                "100% 音量必須保留 PCM 極值");
         System.out.println("RadioPcmSelfTest: " + checks + " checks passed");
     }
 }
