@@ -6,6 +6,17 @@ import java.util.Objects;
 final class RadioPcm {
     private RadioPcm() {}
 
+    /** Java Sound requires the requested line buffer to contain whole PCM frames. */
+    static int alignedBufferSize(int preferredBytes, int frameSize) {
+        if (preferredBytes <= 0 || frameSize <= 0 || frameSize > 65536)
+            throw new IllegalArgumentException("電台音訊緩衝區設定無效");
+        long frames = Math.max(1L, ((long) preferredBytes + frameSize - 1) / frameSize);
+        long bytes = frames * frameSize;
+        if (bytes > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("電台音訊緩衝區過大");
+        return (int) bytes;
+    }
+
     private static void validateVolume(int volume) {
         if (volume < 0 || volume > 100)
             throw new IllegalArgumentException("電台音量必須介於 0～100");
