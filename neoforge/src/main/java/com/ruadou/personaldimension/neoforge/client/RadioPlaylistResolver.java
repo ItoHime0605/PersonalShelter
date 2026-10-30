@@ -83,28 +83,29 @@ public final class RadioPlaylistResolver {
             return uri.toString();
         }
         if (depth >= MAX_PLAYLIST_DEPTH) throw new IOException("電台播放清單巢狀層數過多");
-        if (!visited.add(uri.normalize().toString())) throw new IOException("電台播放清單出現循環連結");
-
-        // Parse and CLOSE the parent playlist before opening a nested one.
-        // Otherwise cancellation might only disconnect the child connection,
-        // leaving the parent socket alive in the background.
-        PlaylistResult result = readPlaylist(uri, cancelled, registerConnection);
-        // A playlist URL can redirect to a raw MP3/AAC/Ogg response while
-        // keeping its original .m3u suffix. Do not parse that URL again.
-        if (result.directStream() != null) return result.directStream();
-        List<String> entries = result.entries();
-        IOException firstError = null;
-        for (String candidate : entries) {
-            checkCancelled(cancelled);
-            try {
-                return resolveNested(candidate, cancelled, registerConnection, visited, depth + 1);
-            } catch (IOException ex) {
+        String key = uri.normalize().toString();
+        if (!visited.add(key)) throw new IOException("電台播放清單出現循環連結");
+        try {
+            // Close the parent socket before opening a nested playlist.
+            PlaylistResult result = readPlaylist(uri, cancelled, registerConnection);
+            if (result.directStream() != null) return result.directStream();
+            IOException firstError = null;
+            for (String candidate : result.entries()) {
                 checkCancelled(cancelled);
-                if (firstError == null) firstError = ex;
+                try {
+                    return resolveNested(candidate, cancelled, registerConnection, visited, depth + 1);
+                } catch (IOException ex) {
+                    checkCancelled(cancelled);
+                    if (firstError == null) firstError = ex;
+                }
             }
+            if (firstError != null) throw firstError;
+            throw new IOException("電台播放清單沒有可用的串流網址");
+        } finally {
+            // Track only the active recursion path. A shared nested playlist
+            // may legitimately appear again under a different fallback entry.
+            visited.remove(key);
         }
-        if (firstError != null) throw firstError;
-        throw new IOException("電台播放清單沒有可用的串流網址");
     }
 
     /**
