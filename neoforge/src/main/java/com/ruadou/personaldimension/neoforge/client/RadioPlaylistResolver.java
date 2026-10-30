@@ -28,6 +28,8 @@ public final class RadioPlaylistResolver {
 
     private RadioPlaylistResolver() {}
 
+    private record PlaylistResult(String directStream, List<String> entries) {}
+
     /** Avoid BufferedReader.readLine allocating an unbounded line before size checks. */
     private static String readBoundedLine(BufferedReader reader, int remaining,
                                           BooleanSupplier cancelled) throws IOException {
@@ -79,7 +81,11 @@ public final class RadioPlaylistResolver {
         // Parse and CLOSE the parent playlist before opening a nested one.
         // Otherwise cancellation might only disconnect the child connection,
         // leaving the parent socket alive in the background.
-        List<String> entries = readPlaylist(uri, cancelled, registerConnection);
+        PlaylistResult result = readPlaylist(uri, cancelled, registerConnection);
+        // A playlist URL can redirect to a raw MP3/AAC/Ogg response while
+        // keeping its original .m3u suffix. Do not parse that URL again.
+        if (result.directStream() != null) return result.directStream();
+        List<String> entries = result.entries();
         IOException firstError = null;
         for (String candidate : entries) {
             checkCancelled(cancelled);
@@ -94,7 +100,7 @@ public final class RadioPlaylistResolver {
         throw new IOException("電台播放清單沒有可用的串流網址");
     }
 
-    private static List<String> readPlaylist(URI initial, BooleanSupplier cancelled,
+    private static PlaylistResult readPlaylist(URI initial, BooleanSupplier cancelled,
                                              Consumer<HttpURLConnection> registerConnection) throws IOException {
         URI uri = initial;
         HttpURLConnection connection = null;
@@ -138,7 +144,7 @@ public final class RadioPlaylistResolver {
             if (audioType || (!isPlaylistPath(uri) && !playlistType
                     && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
                     || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga")))) {
-                return List.of(uri.toString());
+                return new PlaylistResult(uri.toString(), List.of());
             }
 
             boolean pls = finalPath.endsWith(".pls") || mediaType.contains("scpls");
@@ -177,7 +183,7 @@ public final class RadioPlaylistResolver {
                 }
             }
             if (entries.isEmpty()) throw new IOException("電台播放清單沒有可用的串流網址");
-            return entries;
+            return new PlaylistResult(null, entries);
         } finally {
             if (connection != null) connection.disconnect();
             registerConnection.accept(null);
