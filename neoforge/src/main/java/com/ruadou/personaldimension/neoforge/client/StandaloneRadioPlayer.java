@@ -437,12 +437,18 @@ public final class StandaloneRadioPlayer {
                     int read = pcm.read(buffer, pending, buffer.length - pending);
                     if (read == -1) break;
                     if (read == 0) {
-                        // A broken Java Sound SPI may repeatedly return zero without
-                        // advancing the stream. Do not spin forever at 100% CPU.
-                        if (++consecutiveEmptyReads >= 32) {
+                        // A decoder can briefly return zero while waiting for a live
+                        // packet. Yielding 32 times can exhaust the limit in a few
+                        // milliseconds; wait up to 2 seconds without busy-spinning.
+                        if (++consecutiveEmptyReads >= 40) {
                             throw new IOException("OGG 音訊解碼長時間沒有資料");
                         }
-                        Thread.yield();
+                        try {
+                            Thread.sleep(50L);
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new IOException("OGG 音訊播放已中斷", interrupted);
+                        }
                         continue;
                     }
                     consecutiveEmptyReads = 0;

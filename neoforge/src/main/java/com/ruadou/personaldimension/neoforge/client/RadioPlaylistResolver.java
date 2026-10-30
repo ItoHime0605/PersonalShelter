@@ -30,6 +30,8 @@ public final class RadioPlaylistResolver {
     private RadioPlaylistResolver() {}
 
     private record PlaylistResult(String directStream, List<String> entries) {}
+    // An extensionless URL may still serve a nested M3U/PLS manifest.
+    private record StreamProbe(String url, boolean playlist) {}
 
     /** Avoid BufferedReader.readLine allocating an unbounded line before size checks. */
     private static String readBoundedLine(BufferedReader reader, int remaining,
@@ -91,10 +93,17 @@ public final class RadioPlaylistResolver {
     private static String resolveNested(String address, BooleanSupplier cancelled,
                                         Consumer<HttpURLConnection> registerConnection,
                                         Set<String> visited, int depth, String avoidStream) throws IOException {
+        return resolveNested(address, cancelled, registerConnection, visited, depth, avoidStream, false);
+    }
+
+    private static String resolveNested(String address, BooleanSupplier cancelled,
+                                        Consumer<HttpURLConnection> registerConnection,
+                                        Set<String> visited, int depth, String avoidStream,
+                                        boolean forcePlaylist) throws IOException {
         checkCancelled(cancelled);
         URI uri = RadioUrlSecurity.requirePublicHttpUrl(address);
         checkCancelled(cancelled);
-        if (!isPlaylistPath(uri)) {
+        if (!forcePlaylist && !isPlaylistPath(uri)) {
             // A syntactically valid first entry can still be a dead station.
             // Probe playlist candidates before selecting one so the remaining
             // entries are genuine fallbacks, not just URL parsing fallbacks.
@@ -103,11 +112,18 @@ public final class RadioPlaylistResolver {
                 if (uri.toString().equals(avoidStream)) {
                     throw new IOException("前次串流中斷，正在尋找其他備用來源");
                 }
-                String stream = probeStream(uri, cancelled, registerConnection);
-                if (stream.equals(avoidStream)) {
+                StreamProbe probe = probeStream(uri, cancelled, registerConnection);
+                if (probe.playlist()) {
+                    // Playlist directories often use /listen or /stream with no
+                    // .m3u/.pls extension. Inspect the MIME/signature and parse
+                    // these as nested manifests, with the same depth/loop limits.
+                    return resolveNested(probe.url(), cancelled, registerConnection,
+                            visited, depth, avoidStream, true);
+                }
+                if (probe.url().equals(avoidStream)) {
                     throw new IOException("前次串流中斷，正在尋找其他備用來源");
                 }
-                return stream;
+                return probe.url();
             }
             return uri.toString();
         }
@@ -147,7 +163,7 @@ public final class RadioPlaylistResolver {
      * reliable on Icecast/Shoutcast servers. Only response headers are read;
      * the temporary socket is closed before the player opens the real stream.
      */
-    private static String probeStream(URI initial, BooleanSupplier cancelled,
+    private static StreamProbe probeStream(URI initial, BooleanSupplier cancelled,
                                       Consumer<HttpURLConnection> registerConnection) throws IOException {
         URI uri = initial;
         HttpURLConnection connection = null;
@@ -184,8 +200,12 @@ public final class RadioPlaylistResolver {
                 }
                 String type = connection.getContentType();
                 String media = type == null ? "" : type.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                if (media.contains("mpegurl") || media.contains("scpls") || media.contains("opus")) {
+                if (media.contains("opus")) {
                     throw new IOException("電台備用串流格式不支援：" + media);
+                }
+                if (media.contains("mpegurl") || media.contains("scpls")
+                        || media.contains("playlist")) {
+                    return new StreamProbe(uri.toString(), true);
                 }
                 // A 200 OK response is not proof of a working station: dead
                 // endpoints often serve HTML, JSON or an M3U error document.
@@ -199,10 +219,12 @@ public final class RadioPlaylistResolver {
                 if (signature.length == 0) throw new IOException("電台備用串流沒有音訊資料");
                 String prefix = new String(signature, StandardCharsets.US_ASCII)
                         .stripLeading().toLowerCase(Locale.ROOT);
+                if (prefix.startsWith("#extm3u") || prefix.startsWith("[playlist]")) {
+                    return new StreamProbe(uri.toString(), true);
+                }
                 if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
-                        || prefix.startsWith("<?xml") || prefix.startsWith("{")
-                        || prefix.startsWith("[playlist]") || prefix.startsWith("#extm3u")) {
-                    throw new IOException("電台備用串流回傳網頁、錯誤訊息或播放清單");
+                        || prefix.startsWith("<?xml") || prefix.startsWith("{")) {
+                    throw new IOException("電台備用串流回傳網頁或錯誤訊息");
                 }
                 boolean ogg = signature.length >= 4 && signature[0] == 'O'
                         && signature[1] == 'g' && signature[2] == 'g' && signature[3] == 'S';
@@ -221,7 +243,7 @@ public final class RadioPlaylistResolver {
                         && !(ogg || mp4 || adts || mp3)) {
                     throw new IOException("電台備用串流回傳非音訊內容：" + media);
                 }
-                return uri.toString();
+                return new StreamProbe(uri.toString(), false);
             }
             throw new IOException("電台備用串流轉址次數過多");
         } finally {
