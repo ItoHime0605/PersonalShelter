@@ -28,9 +28,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AbstractContainerMenu.class)
 public class ContainerMenuClickClientMixin {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("Personaldimension");
+    private static final Logger personaldimension$clientLogger = LoggerFactory.getLogger("Personaldimension");
 
-    private static boolean isDropAction(int slotNum, ClickType clickType) {
+    private static boolean personaldimension$clientIsDropAction(int slotNum, ClickType clickType) {
         return clickType == ClickType.THROW
                || (slotNum == -999 && clickType == ClickType.PICKUP);
     }
@@ -55,10 +55,10 @@ public class ContainerMenuClickClientMixin {
     @Inject(method = "clicked", at = @At("HEAD"), cancellable = true)
     private void personaldimension$clickedClient(int slotNum, int buttonNum, ClickType clickType, Player player, CallbackInfo ci) {
         if (!player.level().isClientSide()) return; // 服务端由 common mixin 处理
-        if (!isDropAction(slotNum, clickType)) return;
+        if (!personaldimension$clientIsDropAction(slotNum, clickType)) return;
 
         if (shouldDenyClient(player)) {
-            LOGGER.info("[NeoForge-clicked-客户端拦截] slot={}, clickType={}", slotNum, clickType);
+            personaldimension$clientLogger.info("[NeoForge-clicked-客户端拦截] slot={}, clickType={}", slotNum, clickType);
             ci.cancel();
         }
     }
@@ -69,10 +69,10 @@ public class ContainerMenuClickClientMixin {
     @Inject(method = "doClick", at = @At("HEAD"), cancellable = true)
     private void personaldimension$doClick(int slotNum, int dragType, ClickType clickType, Player player, CallbackInfo ci) {
         if (!player.level().isClientSide()) return;
-        if (!isDropAction(slotNum, clickType)) return;
+        if (!personaldimension$clientIsDropAction(slotNum, clickType)) return;
 
         if (shouldDenyClient(player)) {
-            LOGGER.info("[NeoForge-doClick-客户端拦截] slot={}, clickType={}", slotNum, clickType);
+            personaldimension$clientLogger.info("[NeoForge-doClick-客户端拦截] slot={}, clickType={}", slotNum, clickType);
             ci.cancel();
         }
     }
