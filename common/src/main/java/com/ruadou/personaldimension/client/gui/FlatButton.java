@@ -56,7 +56,7 @@ public class FlatButton extends Button {
             if (enabled) {
                 ModernStyle.fillRound(graphics, x + 2, y + 1, w - 4, 1, 0, 0x1EFFFFFF);
             }
-            textColor = ModernStyle.ACCENT_TEXT;
+            textColor = ModernStyle.themeIndex() == 8 ? ModernStyle.TEXT : ModernStyle.ACCENT_TEXT;
         } else {
             int fill;
             if (disabledAppearance) {
