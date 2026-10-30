@@ -2,6 +2,7 @@ package com.ruadou.personaldimension.neoforge.client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -149,12 +150,43 @@ public final class RadioPlaylistResolver {
                     throw new IOException("電台備用串流 HTTP 回應：" + status);
                 }
                 String type = connection.getContentType();
-                if (type != null) {
-                    String media = type.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                    if (media.startsWith("text/html") || media.contains("mpegurl")
-                            || media.contains("scpls") || media.contains("vnd.apple.mpegurl")) {
-                        throw new IOException("電台備用串流回傳網頁或不支援的播放清單");
-                    }
+                String media = type == null ? "" : type.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
+                if (media.contains("mpegurl") || media.contains("scpls") || media.contains("opus")) {
+                    throw new IOException("電台備用串流格式不支援：" + media);
+                }
+                // A 200 OK response is not proof of a working station: dead
+                // endpoints often serve HTML, JSON or an M3U error document.
+                // Probe a small bounded prefix so the next playlist candidate
+                // is attempted before returning a broken URL to the player.
+                byte[] signature;
+                try (InputStream stream = connection.getInputStream()) {
+                    signature = stream.readNBytes(48);
+                }
+                checkCancelled(cancelled);
+                if (signature.length == 0) throw new IOException("電台備用串流沒有音訊資料");
+                String prefix = new String(signature, StandardCharsets.US_ASCII)
+                        .stripLeading().toLowerCase(Locale.ROOT);
+                if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
+                        || prefix.startsWith("<?xml") || prefix.startsWith("{")
+                        || prefix.startsWith("[playlist]") || prefix.startsWith("#extm3u")) {
+                    throw new IOException("電台備用串流回傳網頁、錯誤訊息或播放清單");
+                }
+                boolean ogg = signature.length >= 4 && signature[0] == 'O'
+                        && signature[1] == 'g' && signature[2] == 'g' && signature[3] == 'S';
+                boolean mp4 = signature.length >= 8 && signature[4] == 'f'
+                        && signature[5] == 't' && signature[6] == 'y' && signature[7] == 'p';
+                boolean adts = signature.length >= 2 && (signature[0] & 255) == 255
+                        && (signature[1] & 0xf6) == 0xf0;
+                boolean mp3 = signature.length >= 3 && signature[0] == 'I'
+                        && signature[1] == 'D' && signature[2] == '3';
+                if (!mp3 && signature.length >= 2) {
+                    int second = signature[1] & 255;
+                    mp3 = (signature[0] & 255) == 255
+                            && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
+                }
+                if ((media.startsWith("text/") || media.contains("json") || media.contains("xml"))
+                        && !(ogg || mp4 || adts || mp3)) {
+                    throw new IOException("電台備用串流回傳非音訊內容：" + media);
                 }
                 return uri.toString();
             }

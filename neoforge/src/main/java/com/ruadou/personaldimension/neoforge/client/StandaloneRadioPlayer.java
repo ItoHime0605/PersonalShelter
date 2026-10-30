@@ -150,17 +150,17 @@ public final class StandaloneRadioPlayer {
                 throw new IllegalArgumentException("目前不支援此音訊格式");
             }
             String contentType = conn.getContentType();
+            boolean suspiciousContentType = false;
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
                 if (type.contains("opus") || type.contains("mpegurl") || type.contains("scpls")) {
                     throw new IllegalArgumentException("不支援的電台音訊格式：" + type);
                 }
-                // A radio URL can return HTTP 200 with a web error page.
-                // Never feed HTML/JSON/XML into an MP3 or AAC decoder and
-                // report a misleading codec failure instead of the real issue.
-                if (type.startsWith("text/") || type.contains("json") || type.contains("xml")) {
-                    throw new IOException("電台回傳網頁或非音訊內容：" + type);
-                }
+                // Some legitimate Icecast streams mislabel MP3/AAC as text/plain.
+                // Defer rejecting suspicious MIME types until the audio signature
+                // has been inspected; still reject real HTML/JSON/XML responses.
+                suspiciousContentType = type.startsWith("text/") || type.contains("json")
+                        || type.contains("xml");
             }
             boolean aac = path.endsWith(".aac") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("aac"));
             boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
@@ -216,6 +216,9 @@ public final class StandaloneRadioPlayer {
                     int second = signature[1] & 255;
                     mp3Signature = (signature[0] & 255) == 255
                             && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
+                }
+                if (suspiciousContentType && !(oggSignature || mp4Signature || adtsSignature || mp3Signature)) {
+                    throw new IOException("電台回傳網頁或非音訊內容：" + contentType);
                 }
                 if (mp4Signature) {
                     session.setInput(input);
