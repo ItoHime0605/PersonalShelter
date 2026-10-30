@@ -231,6 +231,26 @@ public final class ModernStyle {
 
     // ===== 颜色工具 =====
 
+    /** Pick a legible label against the actual button fill, regardless of theme. */
+    public static int readableTextOn(int background) {
+        double luminance = relativeLuminance(background);
+        double contrastWithWhite = 1.05D / (luminance + 0.05D);
+        double contrastWithDark = (luminance + 0.05D) / 0.05D;
+        return contrastWithDark >= contrastWithWhite ? 0xFF101510 : 0xFFF9FCF6;
+    }
+
+    private static double relativeLuminance(int color) {
+        double red = linearChannel((color >>> 16) & 255);
+        double green = linearChannel((color >>> 8) & 255);
+        double blue = linearChannel(color & 255);
+        return 0.2126D * red + 0.7152D * green + 0.0722D * blue;
+    }
+
+    private static double linearChannel(int channel) {
+        double value = channel / 255.0D;
+        return value <= 0.04045D ? value / 12.92D : Math.pow((value + 0.055D) / 1.055D, 2.4D);
+    }
+
     /** 两个 ARGB 颜色按 t∈[0,1] 线性插值。 */
     public static int lerpColor(int a, int b, float t) {
         t = clamp01(t);
