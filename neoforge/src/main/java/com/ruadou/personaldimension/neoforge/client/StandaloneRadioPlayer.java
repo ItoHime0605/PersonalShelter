@@ -39,6 +39,8 @@ public final class StandaloneRadioPlayer {
     private static volatile String currentUrl = "";
     private static volatile long retryAfter;
     private static volatile String failedUrl = "";
+    // On a playlist reconnect, prefer another source after the last one failed.
+    private static volatile String failedStreamUrl = "";
     private static volatile String lastFailure = "";
     private static volatile String status = "已停止";
     private static final long RETRY_DELAY_MS = 10_000L;
@@ -69,6 +71,7 @@ public final class StandaloneRadioPlayer {
             if (!url.equals(failedUrl)) {
                 retryAfter = 0;
                 failedUrl = "";
+                failedStreamUrl = "";
                 lastFailure = "";
             }
             if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) {
@@ -80,7 +83,7 @@ public final class StandaloneRadioPlayer {
                 return;
             }
             stopLocked();
-            Session session = new Session(url);
+            Session session = new Session(url, url.equals(failedUrl) ? failedStreamUrl : "");
             active = session;
             currentUrl = url;
             status = "正在連線";
@@ -109,7 +112,8 @@ public final class StandaloneRadioPlayer {
     private static void play(Session session) {
         try {
             String url = RadioPlaylistResolver.resolve(session.url, session.closed::get,
-                    connection -> session.setConnection(connection));
+                    connection -> session.setConnection(connection), session.avoidStreamUrl);
+            session.resolvedStreamUrl = url;
             if (session.closed.get()) return;
             // DNS and address checks happen off-thread, before opening any socket.
             URI uri = RadioUrlSecurity.requirePublicHttpUrl(url);
@@ -247,7 +251,18 @@ public final class StandaloneRadioPlayer {
                 byte[] bytes = new byte[16384];
                 int consecutiveDecodeFailures = 0;
                 while (!session.closed.get()) {
-                    Header header = stream.readFrame();
+                    Header header;
+                    try {
+                        header = stream.readFrame();
+                    } catch (javazoom.jl.decoder.BitstreamException badHeader) {
+                        // A damaged transport frame should not kill the entire station.
+                        // Bound retries to avoid a tight loop on a permanently broken stream.
+                        stream.closeFrame();
+                        if (++consecutiveDecodeFailures >= 5) {
+                            throw new IOException("MP3 音訊連續讀取失敗", badHeader);
+                        }
+                        continue;
+                    }
                     if (header == null) break;
                     try {
                         SampleBuffer pcm;
@@ -322,6 +337,7 @@ public final class StandaloneRadioPlayer {
                     active = null;
                     currentUrl = "";
                     failedUrl = session.url;
+                    failedStreamUrl = session.resolvedStreamUrl == null ? "" : session.resolvedStreamUrl;
                     retryAfter = System.currentTimeMillis() + RETRY_DELAY_MS;
                     if (!interrupted && !status.startsWith("播放失敗")) {
                         status = "連線中斷，稍後重試";
@@ -617,6 +633,8 @@ public final class StandaloneRadioPlayer {
 
     private static final class Session {
         final String url;
+        final String avoidStreamUrl;
+        volatile String resolvedStreamUrl;
         final AtomicBoolean closed = new AtomicBoolean();
         private final Object resources = new Object();
         private HttpURLConnection connection;
@@ -624,7 +642,10 @@ public final class StandaloneRadioPlayer {
         private SourceDataLine line;
         private final AtomicBoolean released = new AtomicBoolean();
 
-        Session(String url) { this.url = url; }
+        Session(String url, String avoidStreamUrl) {
+            this.url = url;
+            this.avoidStreamUrl = avoidStreamUrl;
+        }
 
         // A stop can happen between openConnection()/AudioSystem.getLine()
         // and publishing the resource. Reject late resources immediately so

@@ -66,12 +66,31 @@ public final class RadioPlaylistResolver {
      */
     public static String resolve(String address, BooleanSupplier cancelled,
                                  Consumer<HttpURLConnection> registerConnection) throws IOException {
-        return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0);
+        return resolve(address, cancelled, registerConnection, "");
+    }
+
+    /**
+     * When a previously selected stream drops, try the other playlist entries
+     * first. If it was the only working source, allow it again rather than
+     * permanently silencing the station. Direct URLs are unaffected.
+     */
+    public static String resolve(String address, BooleanSupplier cancelled,
+                                 Consumer<HttpURLConnection> registerConnection,
+                                 String avoidStream) throws IOException {
+        if (avoidStream == null || avoidStream.isBlank()) {
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, "");
+        }
+        try {
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, avoidStream);
+        } catch (IOException noAlternative) {
+            checkCancelled(cancelled);
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, "");
+        }
     }
 
     private static String resolveNested(String address, BooleanSupplier cancelled,
                                         Consumer<HttpURLConnection> registerConnection,
-                                        Set<String> visited, int depth) throws IOException {
+                                        Set<String> visited, int depth, String avoidStream) throws IOException {
         checkCancelled(cancelled);
         URI uri = RadioUrlSecurity.requirePublicHttpUrl(address);
         checkCancelled(cancelled);
@@ -80,7 +99,16 @@ public final class RadioPlaylistResolver {
             // Probe playlist candidates before selecting one so the remaining
             // entries are genuine fallbacks, not just URL parsing fallbacks.
             // A direct user-supplied stream is opened only once by the player.
-            if (depth > 0) return probeStream(uri, cancelled, registerConnection);
+            if (depth > 0) {
+                if (uri.toString().equals(avoidStream)) {
+                    throw new IOException("前次串流中斷，正在尋找其他備用來源");
+                }
+                String stream = probeStream(uri, cancelled, registerConnection);
+                if (stream.equals(avoidStream)) {
+                    throw new IOException("前次串流中斷，正在尋找其他備用來源");
+                }
+                return stream;
+            }
             return uri.toString();
         }
         if (depth >= MAX_PLAYLIST_DEPTH) throw new IOException("電台播放清單巢狀層數過多");
@@ -89,12 +117,17 @@ public final class RadioPlaylistResolver {
         try {
             // Close the parent socket before opening a nested playlist.
             PlaylistResult result = readPlaylist(uri, cancelled, registerConnection);
-            if (result.directStream() != null) return result.directStream();
+            if (result.directStream() != null) {
+                if (result.directStream().equals(avoidStream)) {
+                    throw new IOException("前次串流中斷，正在尋找其他備用來源");
+                }
+                return result.directStream();
+            }
             IOException firstError = null;
             for (String candidate : result.entries()) {
                 checkCancelled(cancelled);
                 try {
-                    return resolveNested(candidate, cancelled, registerConnection, visited, depth + 1);
+                    return resolveNested(candidate, cancelled, registerConnection, visited, depth + 1, avoidStream);
                 } catch (IOException ex) {
                     checkCancelled(cancelled);
                     if (firstError == null) firstError = ex;
