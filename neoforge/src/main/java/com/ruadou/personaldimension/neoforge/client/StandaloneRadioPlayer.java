@@ -182,6 +182,17 @@ public final class StandaloneRadioPlayer {
                 boolean oggSignature = signatureLength >= 4
                         && signature[0] == 'O' && signature[1] == 'g'
                         && signature[2] == 'g' && signature[3] == 'S';
+                // MP4/M4A has an ISO BMFF box header (size followed by "ftyp").
+                // The extension alone is unreliable: some .m4a radios serve ADTS.
+                boolean mp4Signature = signatureLength >= 8
+                        && signature[4] == 'f' && signature[5] == 't'
+                        && signature[6] == 'y' && signature[7] == 'p';
+                if (signatureLength >= 7 && signature[0] == '#' && signature[1] == 'E'
+                        && signature[2] == 'X' && signature[3] == 'T'
+                        && signature[4] == 'M' && signature[5] == '3'
+                        && signature[6] == 'U') {
+                    throw new IOException("此電台使用播放清單，請提供直接串流網址");
+                }
                 boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
                         && (signature[1] & 0xf6) == 0xf0;
                 // Prefer the actual container header over extension / Content-Type.
@@ -194,6 +205,11 @@ public final class StandaloneRadioPlayer {
                     mp3Signature = (signature[0] & 255) == 255
                             && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
                 }
+                if (mp4Signature) {
+                    session.setInput(input);
+                    if (!session.closed.get()) playMp4Aac(session, input);
+                    return;
+                }
                 if (oggSignature || (ogg && !adtsSignature && !mp3Signature)) {
                     session.setInput(input);
                     if (!session.closed.get()) playOgg(session, input);
@@ -203,6 +219,10 @@ public final class StandaloneRadioPlayer {
                     session.setInput(input);
                     if (!session.closed.get()) playAac(session, input);
                     return;
+                }
+                if (!mp3Signature && (path.endsWith(".m4a") || path.endsWith(".mp4")
+                        || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("mp4")))) {
+                    throw new IOException("M4A／MP4 串流缺少可辨識的 AAC 音訊標頭");
                 }
                 session.setInput(input);
                 if (session.closed.get()) return;
