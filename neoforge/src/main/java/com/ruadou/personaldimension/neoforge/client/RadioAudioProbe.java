@@ -38,7 +38,7 @@ final class RadioAudioProbe {
             if (header.length < 10) {
                 throw new EOFException("電台 ID3 中繼資料標頭不完整");
             }
-            for (int i = 6; i <= 9; i++) {
+            if (header[3] < 2 || header[3] > 4 || header[4] != 0) {\n                throw new IOException("電台 ID3 中繼資料版本不支援");\n            }\n            for (int i = 6; i <= 9; i++) {
                 if ((header[i] & 0x80) != 0) {
                     throw new IOException("電台 ID3 中繼資料長度無效");
                 }
