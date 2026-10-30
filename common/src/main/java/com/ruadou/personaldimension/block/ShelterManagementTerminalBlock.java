@@ -25,22 +25,20 @@ import net.minecraft.world.phys.shapes.Shapes;
 /** Desk-mounted, rotatable shelter management laptop. */
 public final class ShelterManagementTerminalBlock extends Block {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-    // The laptop model has a thin 2.7px keyboard base and a nearly 14px tall
-    // upright display. A single 10px cuboid left the upper screen untargetable
-    // and blocked empty space in front of the keyboard. Match both parts and
-    // rotate their hitboxes with the blockstate, just like the JSON model.
+    // Thick 8px horizontal computer chassis and an upright rear display.
+    // Rotate both collision components with the block facing.
     private static final VoxelShape NORTH_SHAPE = Shapes.or(
-            Block.box(0.65, 0, 2, 15.35, 2.7, 13),
-            Block.box(1, 2.2, 10.3, 15, 14.1, 12.4)).optimize();
+            Block.box(0.8, 0, 1.3, 15.2, 8.3, 14),
+            Block.box(1.1, 7.1, 10.9, 14.9, 15.7, 13.7)).optimize();
     private static final VoxelShape EAST_SHAPE = Shapes.or(
-            Block.box(3, 0, 0.65, 14, 2.7, 15.35),
-            Block.box(3.6, 2.2, 1, 5.7, 14.1, 15)).optimize();
+            Block.box(2, 0, 0.8, 14.7, 8.3, 15.2),
+            Block.box(2.3, 7.1, 1.1, 5.1, 15.7, 14.9)).optimize();
     private static final VoxelShape SOUTH_SHAPE = Shapes.or(
-            Block.box(0.65, 0, 3, 15.35, 2.7, 14),
-            Block.box(1, 2.2, 3.6, 15, 14.1, 5.7)).optimize();
+            Block.box(0.8, 0, 2, 15.2, 8.3, 14.7),
+            Block.box(1.1, 7.1, 2.3, 14.9, 15.7, 5.1)).optimize();
     private static final VoxelShape WEST_SHAPE = Shapes.or(
-            Block.box(2, 0, 0.65, 13, 2.7, 15.35),
-            Block.box(10.3, 2.2, 1, 12.4, 14.1, 15)).optimize();
+            Block.box(1.3, 0, 0.8, 14, 8.3, 15.2),
+            Block.box(10.9, 7.1, 1.1, 13.7, 15.7, 14.9)).optimize();
 
     public ShelterManagementTerminalBlock(BlockBehaviour.Properties properties) {
         super(properties);
