@@ -47,16 +47,16 @@ dependencies {
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle project(path: ':common', configuration: 'transformProductionNeoForge')
 
-    // MP3 decoder bundled into Personal Shelter; players do not install OpenFM.
-    implementation "javazoom:jlayer:1.0.1"
+    // Codec classes are available at compile time and shaded into the final mod.\n    // Do not put these dependencies on the NeoForge runtime module path: that\n    // duplicates packages already present in the shaded personaldimension JAR.\n    // MP3 decoder bundled into Personal Shelter; players do not install OpenFM.
+    compileOnly "javazoom:jlayer:1.0.1"
     shadowBundle "javazoom:jlayer:1.0.1"
 
     // AAC ADTS decoder bundled directly; no OpenFM installation required.
-    implementation "de.sfuhrm:jaad:0.8.7"
+    compileOnly "de.sfuhrm:jaad:0.8.7"
     shadowBundle "de.sfuhrm:jaad:0.8.7"
 
     // Ogg Vorbis Java Sound SPI, bundled with the client mod.
-    implementation "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
+    compileOnly "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
     shadowBundle "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
 }
 
