@@ -1,8 +1,10 @@
 name: Build NeoForge 1.21.1 (Java 21)
 
 on:
-  # Manual build: private repositories consume hosted-runner minutes.
-  # Build once after a feature batch, not for every source/version commit.
+  # Build the integrated release candidate on main. The legacy workflow
+  # remains manual to avoid launching duplicate hosted runners.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
