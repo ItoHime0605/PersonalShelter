@@ -272,14 +272,7 @@ public final class StandaloneRadioPlayer {
         } catch (Exception ex) {
             if (!session.closed.get() && active == session) {
                 lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-                String type = ex.getClass().getSimpleName();
-                status = switch (type) {
-                    case "UnknownHostException" -> "播放失敗：找不到電台主機";
-                    case "SocketTimeoutException" -> "播放失敗：連線逾時";
-                    case "UnsupportedAudioFileException" -> "播放失敗：音訊格式不支援";
-                    case "LineUnavailableException" -> "播放失敗：音效裝置無法使用";
-                    default -> "播放失敗：" + type;
-                };
+                status = describeFailure(ex);
                 ClientRadioPlaybackStatus.set(status);
             }
         } finally {
@@ -298,6 +291,25 @@ public final class StandaloneRadioPlayer {
                 }
             }
         }
+    }
+
+    /** Give players a useful Traditional Chinese error instead of a Java exception name. */
+    private static String describeFailure(Exception exception) {
+        if (exception instanceof java.net.UnknownHostException) return "播放失敗：找不到電台主機";
+        if (exception instanceof java.net.SocketTimeoutException) return "播放失敗：電台連線逾時";
+        if (exception instanceof javax.net.ssl.SSLException) return "播放失敗：電台安全連線失敗";
+        if (exception instanceof javax.sound.sampled.UnsupportedAudioFileException) return "播放失敗：音訊格式不支援";
+        if (exception instanceof javax.sound.sampled.LineUnavailableException) return "播放失敗：音效裝置無法使用";
+        if (exception instanceof IOException || exception instanceof IllegalArgumentException
+                || exception instanceof IllegalStateException) {
+            String message = exception.getMessage();
+            if (message != null && !message.isBlank()) {
+                // Avoid long/line-breaking server responses overflowing the radio GUI.
+                String safe = message.replace('\\n', ' ').replace('\\r', ' ').trim();
+                return "播放失敗：" + safe.substring(0, Math.min(64, safe.length()));
+            }
+        }
+        return "播放失敗：音訊解碼或播放發生錯誤";
     }
 
     /** Write whole PCM frames in bounded chunks so stop/switch can release the line promptly. */
