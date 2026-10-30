@@ -74,7 +74,11 @@ public final class StandaloneRadioPlayer {
             if (active != null && url.equals(currentUrl)) return;
             // A .m3u8 URL can be a plain UTF-8 M3U radio playlist, not HLS.
             // Let RadioPlaylistResolver inspect the manifest and reject actual HLS.
-            if (url.equals(unsupportedUrl)) return;
+            // A blocked station must never leave a previous station playing.
+            if (url.equals(unsupportedUrl)) {
+                if (active != null || !currentUrl.isEmpty()) stopLocked();
+                return;
+            }
             // An unsupported HLS station stays blocked until the listener
             // switches stations or disables listening. Do not clear the block
             // during an automatic reconnect.
