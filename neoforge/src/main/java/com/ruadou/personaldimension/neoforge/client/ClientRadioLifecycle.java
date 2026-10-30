@@ -2,6 +2,7 @@ package com.ruadou.personaldimension.neoforge.client;
 
 import com.ruadou.personaldimension.client.ClientCurrentLandRadio;
 import com.ruadou.personaldimension.client.ClientLandRadioData;
+import com.ruadou.personaldimension.client.ClientRadioVolume;
 import net.minecraft.client.Minecraft;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -27,7 +28,8 @@ public final class ClientRadioLifecycle {
         // Stop the current vanilla track only once when the radio starts.
         // RadioMusicManagerMixin prevents new background tracks from being
         // scheduled during playback, without muting other sound categories.
-        boolean radioPlaying = inWorld && StandaloneRadioPlayer.isPlaying();
+        boolean radioPlaying = inWorld && ClientRadioVolume.get() > 0
+                && StandaloneRadioPlayer.isPlaying();
         if (radioPlaying && !wasRadioPlaying) {
             mc.getMusicManager().stopPlaying();
         }
