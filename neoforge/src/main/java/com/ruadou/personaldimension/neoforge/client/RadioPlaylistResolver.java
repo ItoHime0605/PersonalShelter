@@ -299,6 +299,8 @@ public final class RadioPlaylistResolver {
                 byte[] signature = new byte[48];
                 int signatureLength = buffered.read(signature);
                 buffered.reset();
+                String leading = RadioAudioProbe.textPrefix(
+                        java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)));
                 boolean manifest = RadioAudioProbe.classify(
                         java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)))
                         == RadioAudioProbe.Kind.PLAYLIST;
