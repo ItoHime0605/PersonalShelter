@@ -423,10 +423,20 @@ public final class StandaloneRadioPlayer {
                 if (frameSize <= 0) throw new IllegalArgumentException("OGG 音訊影格大小無效");
                 byte[] buffer = new byte[8192 + frameSize];
                 int pending = 0;
+                int consecutiveEmptyReads = 0;
                 while (!session.closed.get()) {
                     int read = pcm.read(buffer, pending, buffer.length - pending);
                     if (read == -1) break;
-                    if (read == 0) continue;
+                    if (read == 0) {
+                        // A broken Java Sound SPI may repeatedly return zero without
+                        // advancing the stream. Do not spin forever at 100% CPU.
+                        if (++consecutiveEmptyReads >= 32) {
+                            throw new IOException("OGG 音訊解碼長時間沒有資料");
+                        }
+                        Thread.yield();
+                        continue;
+                    }
+                    consecutiveEmptyReads = 0;
                     int total = pending + read;
                     int aligned = total - total % frameSize;
                     int remainder = total - aligned;
@@ -479,13 +489,23 @@ public final class StandaloneRadioPlayer {
         // on the next frame. Keep a separate, reusable output buffer for volume.
         byte[] scaledPcm = new byte[8192];
         int consecutiveDecodeFailures = 0;
+        int consecutiveReadFailures = 0;
         while (!session.closed.get()) {
             byte[] frame;
             try {
                 // JAAD can throw EOFException at the end of an ADTS or MP4 stream.
                 frame = frames.readNextFrame();
+                consecutiveReadFailures = 0;
             } catch (java.io.EOFException endOfStream) {
                 break;
+            } catch (IOException damagedTransport) {
+                // ADTS demultiplexers may recover after a damaged frame header.
+                // Bound the retries so a broken live stream cannot spin forever.
+                if (session.closed.get()) return;
+                if (++consecutiveReadFailures >= 5) {
+                    throw new IOException("AAC 音訊連續讀取失敗", damagedTransport);
+                }
+                continue;
             }
             if (frame == null || session.closed.get()) break;
             try {
