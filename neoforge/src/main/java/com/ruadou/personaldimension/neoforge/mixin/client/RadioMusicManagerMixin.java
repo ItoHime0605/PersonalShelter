@@ -1,6 +1,7 @@
 package com.ruadou.personaldimension.neoforge.mixin.client;
 
 import com.ruadou.personaldimension.neoforge.client.StandaloneRadioPlayer;
+import com.ruadou.personaldimension.client.ClientRadioVolume;
 import net.minecraft.client.sounds.MusicManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class RadioMusicManagerMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void personaldimension$suspendBackgroundMusic(CallbackInfo ci) {
-        if (StandaloneRadioPlayer.isPlaying()) {
+        if (ClientRadioVolume.get() > 0 && StandaloneRadioPlayer.isPlaying()) {
             ci.cancel();
         }
     }
