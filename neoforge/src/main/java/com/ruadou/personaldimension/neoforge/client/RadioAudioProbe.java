@@ -76,7 +76,9 @@ final class RadioAudioProbe {
             return Kind.PLAYLIST;
         }
         if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
-                || prefix.startsWith("<?xml") || prefix.startsWith("{")) {
+                || prefix.startsWith("<head") || prefix.startsWith("<body")
+                || prefix.startsWith("<?xml") || prefix.startsWith("<error")
+                || prefix.startsWith("{") || prefix.startsWith("[")) {
             return Kind.NON_AUDIO;
         }
         if (signature.length >= 4 && signature[0] == 'O' && signature[1] == 'g'
