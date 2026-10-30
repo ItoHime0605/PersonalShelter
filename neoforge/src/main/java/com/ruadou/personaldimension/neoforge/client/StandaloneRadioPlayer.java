@@ -251,6 +251,7 @@ public final class StandaloneRadioPlayer {
                 // Reuse a PCM buffer instead of allocating on every MP3 frame.
                 byte[] bytes = new byte[16384];
                 int consecutiveDecodeFailures = 0;
+                int emptyDecodedFrames = 0;
                 while (!session.closed.get()) {
                     Header header;
                     try {
@@ -296,16 +297,18 @@ public final class StandaloneRadioPlayer {
                         }
                         short[] samples = pcm.getBuffer();
                         int length = pcm.getBufferLength();
-                        int byteLength = length * 2;
-                        if (bytes.length < byteLength) bytes = new byte[byteLength];
-                        double volume = ClientRadioVolume.get() / 100.0;
-                        for (int i = 0; i < length; i++) {
-                            short value = clampPcm(samples[i] * volume);
-                            bytes[i * 2] = (byte) value;
-                            bytes[i * 2 + 1] = (byte) (value >>> 8);
+                        if (length == 0) {
+                            // Reject a damaged stream that decodes headers but never PCM.
+                            if (++emptyDecodedFrames >= 128)
+                                throw new IOException("MP3 音訊持續沒有可播放的資料");
+                            continue;
                         }
+                        emptyDecodedFrames = 0;
+                        int byteLength = Math.multiplyExact(length, 2);
+                        if (bytes.length < byteLength) bytes = new byte[byteLength];
+                        RadioPcm.fromShorts(samples, length, bytes, ClientRadioVolume.get());
                         writePcm(session, output, bytes, byteLength, format.getFrameSize());
-                        if (byteLength > 0) markPlaying(session);
+                        markPlaying(session);
                     } finally {
                         stream.closeFrame();
                     }
@@ -427,10 +430,6 @@ public final class StandaloneRadioPlayer {
         }
     }
 
-    private static short clampPcm(double sample) {
-        return (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, Math.round(sample)));
-    }
-
     private static void playOgg(Session session, InputStream input) throws Exception {
         // Java Sound SPI readers require mark/reset during format probing.
         // PushbackInputStream alone does not support mark(), so wrap it first.
@@ -471,13 +470,7 @@ public final class StandaloneRadioPlayer {
                     int total = pending + read;
                     int aligned = total - total % frameSize;
                     int remainder = total - aligned;
-                    double volume = ClientRadioVolume.get() / 100.0;
-                    for (int i = 0; i + 1 < aligned; i += 2) {
-                        short sample = (short) ((buffer[i] & 255) | (buffer[i + 1] << 8));
-                        short scaled = clampPcm(sample * volume);
-                        buffer[i] = (byte) scaled;
-                        buffer[i + 1] = (byte) (scaled >>> 8);
-                    }
+                    RadioPcm.scale16(buffer, buffer, aligned, ClientRadioVolume.get(), false);
                     if (aligned > 0) {
                         writePcm(session, output, buffer, aligned, frameSize);
                         markPlaying(session);
@@ -587,16 +580,9 @@ public final class StandaloneRadioPlayer {
                 output = openAudioLine(session, format);
                 if (output == null) return;
             }
-            double volume = ClientRadioVolume.get() / 100.0;
-            boolean bigEndian = pcm.isBigEndian();
-            for (int i = 0; i < decoded.length; i += 2) {
-                short value = bigEndian
-                        ? (short) ((decoded[i] << 8) | (decoded[i + 1] & 255))
-                        : (short) ((decoded[i] & 255) | (decoded[i + 1] << 8));
-                short scaled = clampPcm(value * volume);
-                scaledPcm[i] = bigEndian ? (byte) (scaled >>> 8) : (byte) scaled;
-                scaledPcm[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
-            }
+            // JAAD reuses decoder buffers; scale into a separate output array.
+            RadioPcm.scale16(decoded, scaledPcm, decoded.length,
+                    ClientRadioVolume.get(), pcm.isBigEndian());
             writePcm(session, output, scaledPcm, decoded.length, frameSize);
             markPlaying(session);
         }
