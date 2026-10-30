@@ -6,8 +6,8 @@ import net.minecraft.client.Minecraft;
 
 /** 本機玩家獨立音量，0～100%，每次可調整 1%。不會更動地主的電台設定。 */
 public final class ClientRadioVolume {
-    private static int volume = 50;
-    private static boolean loaded;
+    private static volatile int volume = 50;
+    private static volatile boolean loaded;
 
     private ClientRadioVolume() {}
 
