@@ -117,6 +117,10 @@ public final class StandaloneRadioPlayer {
             // DNS and address checks happen off-thread, before opening any socket.
             URI uri = RadioUrlSecurity.requirePublicHttpUrl(url);
             if (session.closed.get()) return;
+            // Inspect an already-open response before treating an extensionless
+            // URL as a direct stream. Normal streams pay no extra probe cost.
+            boolean retriedDetectedPlaylist = false;
+            while (!session.closed.get()) {
             HttpURLConnection conn = null;
             for (int redirects = 0; redirects <= 3; redirects++) {
                 if (session.closed.get()) return;
@@ -154,11 +158,14 @@ public final class StandaloneRadioPlayer {
             }
             String contentType = conn.getContentType();
             boolean suspiciousContentType = false;
+            boolean playlistContentType = false;
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                if (type.contains("opus") || type.contains("mpegurl") || type.contains("scpls")) {
+                if (type.contains("opus")) {
                     throw new IllegalArgumentException("不支援的電台音訊格式：" + type);
                 }
+                playlistContentType = type.contains("mpegurl") || type.contains("scpls")
+                        || type.contains("playlist");
                 // Some legitimate Icecast streams mislabel MP3/AAC as text/plain.
                 // Defer rejecting suspicious MIME types until the audio signature
                 // has been inspected; still reject real HTML/JSON/XML responses.
@@ -202,11 +209,24 @@ public final class StandaloneRadioPlayer {
                 boolean mp4Signature = signatureLength >= 8
                         && signature[4] == 'f' && signature[5] == 't'
                         && signature[6] == 'y' && signature[7] == 'p';
-                if (signatureLength >= 7 && signature[0] == '#' && signature[1] == 'E'
-                        && signature[2] == 'X' && signature[3] == 'T'
-                        && signature[4] == 'M' && signature[5] == '3'
-                        && signature[6] == 'U') {
-                    throw new IOException("此電台使用播放清單，請提供直接串流網址");
+                boolean playlistSignature = prefix.startsWith("#extm3u")
+                        || prefix.startsWith("[playlist]") || prefix.startsWith("#ext-x-");
+                if (playlistSignature || playlistContentType) {
+                    if (retriedDetectedPlaylist) {
+                        throw new IOException("電台播放清單重複回傳播放清單，沒有可播放的音訊");
+                    }
+                    // Release the manifest socket before opening a resolver
+                    // connection; cancellation still closes in-flight requests.
+                    input.close();
+                    conn.disconnect();
+                    session.setConnection(null);
+                    url = RadioPlaylistResolver.resolveDetectedPlaylist(url, session.closed::get,
+                            connection -> session.setConnection(connection), session.avoidStreamUrl);
+                    if (session.closed.get()) return;
+                    session.resolvedStreamUrl = url;
+                    uri = RadioUrlSecurity.requirePublicHttpUrl(url);
+                    retriedDetectedPlaylist = true;
+                    continue;
                 }
                 boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
                         && (signature[1] & 0xf6) == 0xf0;
@@ -318,6 +338,9 @@ public final class StandaloneRadioPlayer {
                         stream.closeFrame();
                     }
                 }
+            }
+            // The MP3 stream reached EOF; reconnect through the normal policy.
+            break;
             }
         } catch (Exception ex) {
             // Do not hammer unsupported HLS manifests every ten seconds.
@@ -508,6 +531,7 @@ public final class StandaloneRadioPlayer {
         byte[] scaledPcm = new byte[8192];
         int consecutiveDecodeFailures = 0;
         int consecutiveReadFailures = 0;
+        int emptyDecodedFrames = 0;
         while (!session.closed.get()) {
             byte[] frame;
             try {
@@ -539,8 +563,15 @@ public final class StandaloneRadioPlayer {
             }
             if (session.closed.get()) break;
             byte[] decoded = pcm.getData();
-            // Some AAC frames do not produce samples (e.g. while initializing SBR).
-            if (decoded == null || decoded.length == 0) continue;
+            // SBR may need a few frames to initialize, but a stream that never
+            // produces PCM must not keep decoding forever.
+            if (decoded == null || decoded.length == 0) {
+                if (++emptyDecodedFrames >= 128) {
+                    throw new IOException("AAC 音訊持續沒有可播放的資料");
+                }
+                continue;
+            }
+            emptyDecodedFrames = 0;
             if (pcm.getBitsPerSample() != 16 || pcm.getSampleRate() <= 0 || pcm.getChannels() <= 0) {
                 throw new IllegalArgumentException("AAC 音訊格式不支援");
             }

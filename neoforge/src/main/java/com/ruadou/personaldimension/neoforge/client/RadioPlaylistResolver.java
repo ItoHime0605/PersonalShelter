@@ -67,26 +67,32 @@ public final class RadioPlaylistResolver {
      * interrupt the current playlist fetch. Never invoke on the render thread.
      */
     public static String resolve(String address, BooleanSupplier cancelled,
-                                 Consumer<HttpURLConnection> registerConnection) throws IOException {
-        return resolve(address, cancelled, registerConnection, "");
-    }
-
-    /**
-     * When a previously selected stream drops, try the other playlist entries
-     * first. If it was the only working source, allow it again rather than
-     * permanently silencing the station. Direct URLs are unaffected.
-     */
-    public static String resolve(String address, BooleanSupplier cancelled,
                                  Consumer<HttpURLConnection> registerConnection,
                                  String avoidStream) throws IOException {
+        return resolveWithMode(address, cancelled, registerConnection, avoidStream, false);
+    }
+
+    /** Parse a manifest found in an extensionless/mislabeled HTTP response. */
+    public static String resolveDetectedPlaylist(String address, BooleanSupplier cancelled,
+                                                  Consumer<HttpURLConnection> registerConnection,
+                                                  String avoidStream) throws IOException {
+        return resolveWithMode(address, cancelled, registerConnection, avoidStream, true);
+    }
+
+    private static String resolveWithMode(String address, BooleanSupplier cancelled,
+                                          Consumer<HttpURLConnection> registerConnection,
+                                          String avoidStream, boolean forcePlaylist) throws IOException {
         if (avoidStream == null || avoidStream.isBlank()) {
-            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, "");
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0,
+                    "", forcePlaylist);
         }
         try {
-            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, avoidStream);
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0,
+                    avoidStream, forcePlaylist);
         } catch (IOException noAlternative) {
             checkCancelled(cancelled);
-            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0, "");
+            return resolveNested(address, cancelled, registerConnection, new HashSet<>(), 0,
+                    "", forcePlaylist);
         }
     }
 
@@ -293,16 +299,28 @@ public final class RadioPlaylistResolver {
                     || mediaType.contains("playlist");
             boolean audioType = mediaType.startsWith("audio/") && !playlistType;
             String finalPath = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
-            if (audioType || (!isPlaylistPath(uri) && !playlistType
-                    && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
-                    || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga")))) {
-                return new PlaylistResult(uri.toString(), List.of());
-            }
-
             boolean pls = finalPath.endsWith(".pls") || mediaType.contains("scpls");
             List<String> entries = new ArrayList<>();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+            try (java.io.BufferedInputStream buffered = new java.io.BufferedInputStream(
+                    connection.getInputStream(), 8192)) {
+                // Some stations label #EXTM3U as audio/mpeg. Check the actual
+                // response before returning it as a direct audio stream.
+                buffered.mark(64);
+                byte[] signature = new byte[48];
+                int signatureLength = buffered.read(signature);
+                buffered.reset();
+                String leading = new String(signature, 0, Math.max(0, signatureLength),
+                        StandardCharsets.US_ASCII).stripLeading().toLowerCase(Locale.ROOT);
+                boolean manifest = leading.startsWith("#extm3u")
+                        || leading.startsWith("[playlist]") || leading.startsWith("#ext-x-");
+                if (!manifest && (audioType || (!isPlaylistPath(uri) && !playlistType
+                        && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
+                        || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga"))))) {
+                    return new PlaylistResult(uri.toString(), List.of());
+                }
+                if (leading.startsWith("[playlist]")) pls = true;
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(buffered, StandardCharsets.UTF_8));
                 int chars = 0;
                 for (int i = 0; i < MAX_LINES; i++) {
                     checkCancelled(cancelled);
