@@ -31,7 +31,11 @@ public final class SpawnControlService {
                 || type == MobSpawnType.SPAWNER
                 || type == MobSpawnType.REINFORCEMENT
                 || type == MobSpawnType.PATROL
-                || type == MobSpawnType.STRUCTURE;
+                || type == MobSpawnType.STRUCTURE
+                || type == MobSpawnType.EVENT
+                || type == MobSpawnType.TRIGGERED
+                || type == MobSpawnType.JOCKEY
+                || type == MobSpawnType.TRIAL_SPAWNER;
     }
 
     public static ResourceLocation idOf(Mob mob) {
