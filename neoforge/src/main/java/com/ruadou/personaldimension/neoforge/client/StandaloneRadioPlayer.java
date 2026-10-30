@@ -60,13 +60,21 @@ public final class StandaloneRadioPlayer {
         synchronized (LOCK) {
             if (url.isBlank()) {
                 if (active != null || !currentUrl.isEmpty() || !status.equals("已停止")) stopLocked();
+                unsupportedUrl = "";
+                failedUrl = "";
+                failedStreamUrl = "";
+                retryAfter = 0;
                 return;
             }
             if (active != null && url.equals(currentUrl)) return;
             // A .m3u8 URL can be a plain UTF-8 M3U radio playlist, not HLS.
             // Let RadioPlaylistResolver inspect the manifest and reject actual HLS.
             if (url.equals(unsupportedUrl)) return;
+            // An unsupported HLS station stays blocked until the listener
+            // switches stations or disables listening. Do not clear the block
+            // during an automatic reconnect.
             if (!url.equals(failedUrl)) {
+                unsupportedUrl = "";
                 retryAfter = 0;
                 failedUrl = "";
                 failedStreamUrl = "";
@@ -93,12 +101,19 @@ public final class StandaloneRadioPlayer {
     }
 
     public static void stop() {
-        synchronized (LOCK) { stopLocked(); }
+        synchronized (LOCK) {
+            stopLocked();
+            // Explicit stop is a fresh listening session. Allow a later
+            // deliberate retry of a station previously identified as HLS.
+            unsupportedUrl = "";
+            failedUrl = "";
+            failedStreamUrl = "";
+            retryAfter = 0;
+        }
     }
 
     private static void stopLocked() {
         Session old = active;
-        unsupportedUrl = "";
         active = null;
         currentUrl = "";
         if (old != null) {
