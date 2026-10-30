@@ -408,10 +408,30 @@ public final class StandaloneRadioPlayer {
         }
     }
 
-    /** Decode ADTS AAC on the radio worker, without blocking Minecraft's client tick. */
+    /** ADTS and MP4 AAC share the same decoding, volume and audio-line lifecycle. */
+    @FunctionalInterface
+    private interface AacFrameReader {
+        byte[] readNextFrame() throws Exception;
+    }
+
     private static void playAac(Session session, InputStream input) throws Exception {
         ADTSDemultiplexer adts = new ADTSDemultiplexer(input);
-        net.sourceforge.jaad.aac.Decoder decoder = new net.sourceforge.jaad.aac.Decoder(adts.getDecoderSpecificInfo());
+        playAacFrames(session, adts.getDecoderSpecificInfo(), adts::readNextFrame);
+    }
+
+    /** MP4/M4A AAC is decoded by the existing bundled JAAD library, without OpenFM. */
+    private static void playMp4Aac(Session session, InputStream input) throws Exception {
+        MP4Container container = new MP4Container(input);
+        if (session.closed.get()) return;
+        List<Track> tracks = container.getMovie().getTracks(AudioTrack.AudioCodec.AAC);
+        if (tracks.isEmpty()) throw new IOException("M4A／MP4 檔案沒有支援的 AAC 音軌");
+        Track track = tracks.get(0);
+        playAacFrames(session, track.getDecoderSpecificInfo(), track::readNextFrame);
+    }
+
+    private static void playAacFrames(Session session, byte[] decoderSpecificInfo,
+                                      AacFrameReader frames) throws Exception {
+        net.sourceforge.jaad.aac.Decoder decoder = new net.sourceforge.jaad.aac.Decoder(decoderSpecificInfo);
         net.sourceforge.jaad.aac.SampleBuffer pcm = new net.sourceforge.jaad.aac.SampleBuffer();
         // Never modify JAAD's decoder-owned PCM array: its storage can be reused
         // on the next frame. Keep a separate, reusable output buffer for volume.
@@ -420,9 +440,8 @@ public final class StandaloneRadioPlayer {
         while (!session.closed.get()) {
             byte[] frame;
             try {
-                // JAAD 0.8.7 throws EOFException rather than returning null at the end
-                // of an ADTS stream; treat it as a disconnect and let retry logic reconnect.
-                frame = adts.readNextFrame();
+                // JAAD can throw EOFException at the end of an ADTS or MP4 stream.
+                frame = frames.readNextFrame();
             } catch (java.io.EOFException endOfStream) {
                 break;
             }
