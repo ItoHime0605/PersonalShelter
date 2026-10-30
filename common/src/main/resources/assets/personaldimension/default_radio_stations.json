@@ -5,29 +5,11 @@
     {
       "id": "station_02",
       "category": "台灣",
-      "name": "飛碟聯播網",
-      "source_url": "http://netwave.com.tw",
-      "stream_url": "https://stream.rcs.revma.com/em90w4aeewzuv.m4a",
+      "name": "港都電台 FM98.3（好事聯播網）",
+      "source_url": "https://www.bestradio.com.tw/",
+      "stream_url": "https://stream.rcs.revma.com/q2m07dc59duvv",
       "enabled": true,
-      "verification": "公開串流網址待遊戲內實測"
-    },
-    {
-      "id": "station_03",
-      "category": "台灣",
-      "name": "i Radio 中廣音樂網",
-      "source_url": "http://netwave.com.tw",
-      "stream_url": "https://stream.rcs.revma.com/ks4vsmg3qtzuv",
-      "enabled": true,
-      "verification": "公開串流網址待遊戲內實測"
-    },
-    {
-      "id": "station_04",
-      "category": "台灣",
-      "name": "中廣流行網",
-      "source_url": "http://netwave.com.tw",
-      "stream_url": "https://stream.rcs.revma.com/s1zttsg3qtzuv",
-      "enabled": true,
-      "verification": "公開串流網址待遊戲內實測"
+      "verification": "第三方目錄近期確認 AAC 串流可連線；尚待 Minecraft 遊戲內播放測試"
     },
     {
       "id": "station_05",
