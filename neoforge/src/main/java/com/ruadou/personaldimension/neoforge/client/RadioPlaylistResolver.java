@@ -74,7 +74,14 @@ public final class RadioPlaylistResolver {
         checkCancelled(cancelled);
         URI uri = RadioUrlSecurity.requirePublicHttpUrl(address);
         checkCancelled(cancelled);
-        if (!isPlaylistPath(uri)) return uri.toString();
+        if (!isPlaylistPath(uri)) {
+            // A syntactically valid first entry can still be a dead station.
+            // Probe playlist candidates before selecting one so the remaining
+            // entries are genuine fallbacks, not just URL parsing fallbacks.
+            // A direct user-supplied stream is opened only once by the player.
+            if (depth > 0) return probeStream(uri, cancelled, registerConnection);
+            return uri.toString();
+        }
         if (depth >= MAX_PLAYLIST_DEPTH) throw new IOException("電台播放清單巢狀層數過多");
         if (!visited.add(uri.normalize().toString())) throw new IOException("電台播放清單出現循環連結");
 
@@ -98,6 +105,63 @@ public final class RadioPlaylistResolver {
         }
         if (firstError != null) throw firstError;
         throw new IOException("電台播放清單沒有可用的串流網址");
+    }
+
+    /**
+     * Validate a playlist stream candidate using a bounded GET. HEAD is not
+     * reliable on Icecast/Shoutcast servers. Only response headers are read;
+     * the temporary socket is closed before the player opens the real stream.
+     */
+    private static String probeStream(URI initial, BooleanSupplier cancelled,
+                                      Consumer<HttpURLConnection> registerConnection) throws IOException {
+        URI uri = initial;
+        HttpURLConnection connection = null;
+        try {
+            for (int redirects = 0; redirects <= 3; redirects++) {
+                checkCancelled(cancelled);
+                uri = RadioUrlSecurity.requirePublicHttpUrl(uri.toString());
+                checkCancelled(cancelled);
+                connection = (HttpURLConnection) uri.toURL().openConnection();
+                registerConnection.accept(connection);
+                checkCancelled(cancelled);
+                connection.setConnectTimeout(TIMEOUT_MS);
+                connection.setReadTimeout(TIMEOUT_MS);
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestProperty("User-Agent", "PersonalShelter/Radio");
+                connection.setRequestProperty("Icy-MetaData", "0");
+                int status = connection.getResponseCode();
+                checkCancelled(cancelled);
+                if (status == 301 || status == 302 || status == 303
+                        || status == 307 || status == 308) {
+                    if (redirects == 3) throw new IOException("電台備用串流轉址次數過多");
+                    String location = connection.getHeaderField("Location");
+                    if (location == null || location.isBlank()) throw new IOException("電台備用串流轉址缺少網址");
+                    URI next = RadioUrlSecurity.requirePublicHttpUrl(uri.resolve(location).toString());
+                    checkCancelled(cancelled);
+                    connection.disconnect();
+                    registerConnection.accept(null);
+                    connection = null;
+                    uri = next;
+                    continue;
+                }
+                if (status != HttpURLConnection.HTTP_OK && status != HttpURLConnection.HTTP_PARTIAL) {
+                    throw new IOException("電台備用串流 HTTP 回應：" + status);
+                }
+                String type = connection.getContentType();
+                if (type != null) {
+                    String media = type.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
+                    if (media.startsWith("text/html") || media.contains("mpegurl")
+                            || media.contains("scpls") || media.contains("vnd.apple.mpegurl")) {
+                        throw new IOException("電台備用串流回傳網頁或不支援的播放清單");
+                    }
+                }
+                return uri.toString();
+            }
+            throw new IOException("電台備用串流轉址次數過多");
+        } finally {
+            if (connection != null) connection.disconnect();
+            registerConnection.accept(null);
+        }
     }
 
     private static PlaylistResult readPlaylist(URI initial, BooleanSupplier cancelled,
