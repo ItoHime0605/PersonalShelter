@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "personaldimension:shelter_radio",
+    "personaldimension:white_shelter_radio",
+    "personaldimension:orange_shelter_radio",
+    "personaldimension:magenta_shelter_radio",
+    "personaldimension:light_blue_shelter_radio",
+    "personaldimension:yellow_shelter_radio",
+    "personaldimension:lime_shelter_radio",
+    "personaldimension:pink_shelter_radio",
+    "personaldimension:gray_shelter_radio",
+    "personaldimension:light_gray_shelter_radio",
+    "personaldimension:cyan_shelter_radio",
+    "personaldimension:purple_shelter_radio",
+    "personaldimension:blue_shelter_radio",
+    "personaldimension:brown_shelter_radio",
+    "personaldimension:green_shelter_radio",
+    "personaldimension:red_shelter_radio",
+    "personaldimension:black_shelter_radio"
+  ]
+}
