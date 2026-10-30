@@ -38,8 +38,15 @@ final class RadioAudioProbe {
             if (header.length < 10) {
                 throw new EOFException("電台 ID3 中繼資料標頭不完整");
             }
-            if (header[3] < 2 || header[3] > 4 || header[4] != 0) {
+            int version = header[3] & 255;
+            if (version < 2 || version > 4 || header[4] != 0) {
                 throw new IOException("電台 ID3 中繼資料版本不支援");
+            }
+            // Each ID3 revision defines its own flag mask. Reject reserved
+            // flags rather than skipping an incorrectly described tag body.
+            int allowedFlags = version == 2 ? 0xc0 : version == 3 ? 0xe0 : 0xf0;
+            if (((header[5] & 255) & ~allowedFlags) != 0) {
+                throw new IOException("電台 ID3 中繼資料旗標無效");
             }
             for (int i = 6; i <= 9; i++) {
                 if ((header[i] & 0x80) != 0) {
