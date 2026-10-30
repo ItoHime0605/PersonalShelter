@@ -61,7 +61,10 @@ public class ModernButton extends Button {
                 int border = ModernStyle.darken(base, 0.28f);
                 ModernStyle.roundedRectGrad(graphics, x, y, w, h, r, top, bottom, border);
                 ModernStyle.fillRound(graphics, x + 2, y + 1, w - 4, 1, 0, 0x22FFFFFF); // 顶部极淡微光
-                textColor = ModernStyle.ACCENT_TEXT;
+                // The active palette can make an accent pale or saturated.
+                // Choose text from actual fill luminance rather than reusing
+                // the panel's text color (unreadable on light accents).
+                textColor = ModernStyle.readableTextOn(base);
             }
         }
 

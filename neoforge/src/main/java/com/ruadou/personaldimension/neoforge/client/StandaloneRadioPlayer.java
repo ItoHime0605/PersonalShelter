@@ -155,6 +155,12 @@ public final class StandaloneRadioPlayer {
                 if (type.contains("opus") || type.contains("mpegurl") || type.contains("scpls")) {
                     throw new IllegalArgumentException("不支援的電台音訊格式：" + type);
                 }
+                // A radio URL can return HTTP 200 with a web error page.
+                // Never feed HTML/JSON/XML into an MP3 or AAC decoder and
+                // report a misleading codec failure instead of the real issue.
+                if (type.startsWith("text/") || type.contains("json") || type.contains("xml")) {
+                    throw new IOException("電台回傳網頁或非音訊內容：" + type);
+                }
             }
             boolean aac = path.endsWith(".aac") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("aac"));
             boolean ogg = path.endsWith(".ogg") || (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("ogg"));
@@ -179,6 +185,12 @@ public final class StandaloneRadioPlayer {
                 byte[] signature = input.readNBytes(12);
                 int signatureLength = signature.length;
                 if (signatureLength > 0) input.unread(signature, 0, signatureLength);
+                String prefix = new String(signature, 0, signatureLength,
+                        java.nio.charset.StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
+                        || prefix.startsWith("<?xml") || prefix.startsWith("{\"error\"")) {
+                    throw new IOException("電台網址回傳網頁或錯誤訊息，並非音訊串流");
+                }
                 boolean oggSignature = signatureLength >= 4
                         && signature[0] == 'O' && signature[1] == 'g'
                         && signature[2] == 'g' && signature[3] == 'S';

@@ -195,6 +195,21 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             protected void applyValue() {
                 ClientRadioVolume.set((int) Math.round(value * 100.0D));
             }
+
+            @Override
+            public boolean mouseDragged(double mouseX, double mouseY, int button,
+                                        double dragX, double dragY) {
+                if (button != 0 || !this.active) return false;
+                // Track the pointer directly even after it leaves the thumb.
+                // Relying on the parent screen's drag dispatch caused clicks to
+                // work while continuous dragging was lost on some UI paths.
+                double travel = Math.max(1.0D, getWidth() - 8.0D);
+                this.value = Math.max(0.0D, Math.min(1.0D,
+                        (mouseX - (getX() + 4.0D)) / travel));
+                updateMessage();
+                applyValue();
+                return true;
+            }
         });
     }
 
@@ -691,7 +706,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     public void tick() {
         super.tick();
         if (activeTab == Tab.SETTINGS && settingsPage == SettingsPage.RADIO
-                && lastRadioRevision != ClientLandRadioData.revision()) {
+                && lastRadioRevision != ClientLandRadioData.revision()
+                && !draggingVolumeSlider) {
             lastRadioRevision = ClientLandRadioData.revision();
             if (radioNameInput == null) rebuildWidgets();
         }

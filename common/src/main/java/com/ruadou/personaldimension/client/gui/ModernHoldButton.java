@@ -96,7 +96,10 @@ public class ModernHoldButton extends Button {
                 ModernStyle.fillRound(g, x + 2, y + 1, w - 4, 1, 0, 0x22FFFFFF);
                 g.disableScissor();
             }
-            textColor = ModernStyle.ACCENT_TEXT;
+            // During hold, the red progress fill can cover most of the label.
+            // Both warning and danger fills need theme-independent contrast.
+            textColor = ModernStyle.readableTextOn(
+                    this.progress >= 0.5f ? ModernStyle.DANGER : base);
         }
 
         // 完成闪烁：渐隐白光
