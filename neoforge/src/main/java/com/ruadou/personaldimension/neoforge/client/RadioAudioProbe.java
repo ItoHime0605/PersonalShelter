@@ -55,6 +55,50 @@ final class RadioAudioProbe {
         throw new IOException("電台 ID3 中繼資料過多");
     }
 
+
+    /** One audio signature policy for direct streams and playlist candidates. */
+    enum Kind { MP3, ADTS_AAC, OGG, MP4_AAC, PLAYLIST, NON_AUDIO, UNKNOWN }
+
+    static Kind classify(byte[] signature) {
+        String prefix = textPrefix(signature);
+        if (prefix.startsWith("#extm3u") || prefix.startsWith("#ext-x-")
+                || prefix.startsWith("#extinf") || prefix.startsWith("[playlist]")) {
+            return Kind.PLAYLIST;
+        }
+        if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
+                || prefix.startsWith("<?xml") || prefix.startsWith("{")) {
+            return Kind.NON_AUDIO;
+        }
+        if (signature.length >= 4 && signature[0] == 'O' && signature[1] == 'g'
+                && signature[2] == 'g' && signature[3] == 'S') {
+            return Kind.OGG;
+        }
+        if (signature.length >= 8 && signature[4] == 'f' && signature[5] == 't'
+                && signature[6] == 'y' && signature[7] == 'p') {
+            return Kind.MP4_AAC;
+        }
+        if (signature.length >= 2 && (signature[0] & 255) == 255
+                && (signature[1] & 0xf6) == 0xf0) {
+            return Kind.ADTS_AAC;
+        }
+        // A leading ID3 tag is an MP3 hint only. The main player first strips
+        // bounded ID3v2 tags and reclassifies the actual AAC/MP3 payload.
+        if (signature.length >= 3 && signature[0] == 'I'
+                && signature[1] == 'D' && signature[2] == '3') {
+            return Kind.MP3;
+        }
+        if (signature.length >= 3 && (signature[0] & 255) == 255) {
+            int second = signature[1] & 255;
+            int third = signature[2] & 255;
+            // MPEG sync, valid layer, non-reserved sample rate and bitrate.
+            if ((second & 0xe0) == 0xe0 && (second & 0x06) != 0
+                    && (third & 0x0c) != 0x0c && (third & 0xf0) != 0xf0) {
+                return Kind.MP3;
+            }
+        }
+        return Kind.UNKNOWN;
+    }
+
     /** Recognize UTF-8 BOM-prefixed playlists and text errors consistently. */
     static String textPrefix(byte[] signature) {
         String prefix = new String(signature, StandardCharsets.UTF_8);

@@ -195,22 +195,13 @@ public final class StandaloneRadioPlayer {
                 // Live AAC and MP3 streams may begin with ID3v2 metadata.
                 // Remove only the bounded tag before probing; leave audio bytes unread.
                 byte[] signature = RadioAudioProbe.peekAfterId3(input);
-                int signatureLength = signature.length;
-                String prefix = RadioAudioProbe.textPrefix(signature);
-                if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
-                        || prefix.startsWith("<?xml") || prefix.startsWith("{\"error\"")) {
+                RadioAudioProbe.Kind kind = RadioAudioProbe.classify(signature);
+                if (kind == RadioAudioProbe.Kind.NON_AUDIO) {
                     throw new IOException("電台網址回傳網頁或錯誤訊息，並非音訊串流");
                 }
-                boolean oggSignature = signatureLength >= 4
-                        && signature[0] == 'O' && signature[1] == 'g'
-                        && signature[2] == 'g' && signature[3] == 'S';
-                // MP4/M4A has an ISO BMFF box header (size followed by "ftyp").
-                // The extension alone is unreliable: some .m4a radios serve ADTS.
-                boolean mp4Signature = signatureLength >= 8
-                        && signature[4] == 'f' && signature[5] == 't'
-                        && signature[6] == 'y' && signature[7] == 'p';
-                boolean playlistSignature = prefix.startsWith("#extm3u")
-                        || prefix.startsWith("[playlist]") || prefix.startsWith("#ext-x-");
+                boolean oggSignature = kind == RadioAudioProbe.Kind.OGG;
+                boolean mp4Signature = kind == RadioAudioProbe.Kind.MP4_AAC;
+                boolean playlistSignature = kind == RadioAudioProbe.Kind.PLAYLIST;
                 if (playlistSignature || playlistContentType) {
                     if (retriedDetectedPlaylist) {
                         throw new IOException("電台播放清單重複回傳播放清單，沒有可播放的音訊");
@@ -228,18 +219,9 @@ public final class StandaloneRadioPlayer {
                     retriedDetectedPlaylist = true;
                     continue;
                 }
-                boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
-                        && (signature[1] & 0xf6) == 0xf0;
-                // Prefer the actual container header over extension / Content-Type.
-                // Some stations advertise audio/aacp or audio/mpeg incorrectly, and
-                // misrouting an Ogg or MP3 stream into the AAC decoder breaks playback.
-                boolean mp3Signature = signatureLength >= 3
-                        && signature[0] == 'I' && signature[1] == 'D' && signature[2] == '3';
-                if (!mp3Signature && signatureLength >= 2) {
-                    int second = signature[1] & 255;
-                    mp3Signature = (signature[0] & 255) == 255
-                            && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
-                }
+                // Use the same validated signature rules as the playlist resolver.
+                boolean adtsSignature = kind == RadioAudioProbe.Kind.ADTS_AAC;
+                boolean mp3Signature = kind == RadioAudioProbe.Kind.MP3;
                 if (suspiciousContentType && !(oggSignature || mp4Signature || adtsSignature || mp3Signature)) {
                     throw new IOException("電台回傳網頁或非音訊內容：" + contentType);
                 }

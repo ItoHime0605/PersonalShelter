@@ -31,6 +31,14 @@ jobs:
           test -d neoforge/src/main
       - name: Compile NeoForge mod
         run: gradle :neoforge:build --stacktrace --no-daemon
+      - name: Verify radio audio signatures (Java 21)
+        shell: bash
+        run: |
+          mkdir -p build/radio-probe-tests
+          javac -encoding UTF-8 -d build/radio-probe-tests \
+            neoforge/src/main/java/com/ruadou/personaldimension/neoforge/client/RadioAudioProbe.java \
+            neoforge/src/test/java/com/ruadou/personaldimension/neoforge/client/RadioAudioProbeSelfTest.java
+          java -cp build/radio-probe-tests com.ruadou.personaldimension.neoforge.client.RadioAudioProbeSelfTest
       - name: Upload NeoForge JARs
         uses: actions/upload-artifact@v4
         with:

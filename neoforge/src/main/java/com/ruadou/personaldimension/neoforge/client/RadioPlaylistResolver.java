@@ -228,29 +228,15 @@ public final class RadioPlaylistResolver {
                 }
                 checkCancelled(cancelled);
                 if (signature.length == 0) throw new IOException("電台備用串流沒有音訊資料");
-                String prefix = RadioAudioProbe.textPrefix(signature);
-                if (prefix.startsWith("#extm3u") || prefix.startsWith("[playlist]")) {
+                RadioAudioProbe.Kind kind = RadioAudioProbe.classify(signature);
+                if (kind == RadioAudioProbe.Kind.PLAYLIST) {
                     return new StreamProbe(uri.toString(), true);
                 }
-                if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
-                        || prefix.startsWith("<?xml") || prefix.startsWith("{")) {
+                if (kind == RadioAudioProbe.Kind.NON_AUDIO) {
                     throw new IOException("電台備用串流回傳網頁或錯誤訊息");
                 }
-                boolean ogg = signature.length >= 4 && signature[0] == 'O'
-                        && signature[1] == 'g' && signature[2] == 'g' && signature[3] == 'S';
-                boolean mp4 = signature.length >= 8 && signature[4] == 'f'
-                        && signature[5] == 't' && signature[6] == 'y' && signature[7] == 'p';
-                boolean adts = signature.length >= 2 && (signature[0] & 255) == 255
-                        && (signature[1] & 0xf6) == 0xf0;
-                boolean mp3 = signature.length >= 3 && signature[0] == 'I'
-                        && signature[1] == 'D' && signature[2] == '3';
-                if (!mp3 && signature.length >= 2) {
-                    int second = signature[1] & 255;
-                    mp3 = (signature[0] & 255) == 255
-                            && (second & 0xe0) == 0xe0 && (second & 0x06) != 0;
-                }
                 if ((media.startsWith("text/") || media.contains("json") || media.contains("xml"))
-                        && !(ogg || mp4 || adts || mp3)) {
+                        && kind == RadioAudioProbe.Kind.UNKNOWN) {
                     throw new IOException("電台備用串流回傳非音訊內容：" + media);
                 }
                 return new StreamProbe(uri.toString(), false);
@@ -313,10 +299,9 @@ public final class RadioPlaylistResolver {
                 byte[] signature = new byte[48];
                 int signatureLength = buffered.read(signature);
                 buffered.reset();
-                String leading = RadioAudioProbe.textPrefix(
-                        java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)));
-                boolean manifest = leading.startsWith("#extm3u")
-                        || leading.startsWith("[playlist]") || leading.startsWith("#ext-x-");
+                boolean manifest = RadioAudioProbe.classify(
+                        java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)))
+                        == RadioAudioProbe.Kind.PLAYLIST;
                 if (!manifest && (audioType || (!isPlaylistPath(uri) && !playlistType
                         && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
                         || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga"))))) {
