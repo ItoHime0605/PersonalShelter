@@ -19,8 +19,19 @@ public final class SpawnControlService {
         return SpawnRuleData.get(level);
     }
 
+    /**
+     * Automatic world-generated spawns, including modded monsters that use
+     * vanilla spawn reasons. Explicit spawn eggs and commands remain allowed.
+     * Keep this classifier shared by the private-land hostile rule and the
+     * per-land spawn-filter rules.
+     */
     public static boolean isNatural(MobSpawnType type) {
-        return type == MobSpawnType.NATURAL || type == MobSpawnType.CHUNK_GENERATION;
+        return type == MobSpawnType.NATURAL
+                || type == MobSpawnType.CHUNK_GENERATION
+                || type == MobSpawnType.SPAWNER
+                || type == MobSpawnType.REINFORCEMENT
+                || type == MobSpawnType.PATROL
+                || type == MobSpawnType.STRUCTURE;
     }
 
     public static ResourceLocation idOf(Mob mob) {
