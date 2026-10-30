@@ -415,11 +415,29 @@ public final class StandaloneRadioPlayer {
         SourceDataLine output = (SourceDataLine) AudioSystem.getLine(
                 new DataLine.Info(SourceDataLine.class, format));
         try {
-            // Reserve about 0.7 seconds at 48 kHz stereo 16-bit PCM so
-            // brief network/decoder scheduling stalls do not underrun audio.
-            // This does not delay stop/switch: writes remain bounded and
-            // cancellation closes the output line.
-            output.open(format, RadioPcm.alignedBufferSize(131072, format.getFrameSize()));
+            // Prefer a larger device buffer to absorb network/decoder jitter,
+            // but some sound drivers reject large line allocations. Fall back
+            // to smaller frame-aligned buffers instead of dropping every station.
+            Exception lastOpenFailure = null;
+            boolean opened = false;
+            for (int requestedBytes : new int[] {131072, 65536, 32768}) {
+                if (session.closed.get()) return null;
+                try {
+                    output.open(format, RadioPcm.alignedBufferSize(
+                            requestedBytes, format.getFrameSize()));
+                    opened = true;
+                    break;
+                } catch (javax.sound.sampled.LineUnavailableException
+                        | IllegalArgumentException failure) {
+                    lastOpenFailure = failure;
+                    // A failed attempt must not leave a half-open native line.
+                    if (output.isOpen()) output.close();
+                }
+            }
+            if (!opened) {
+                throw new javax.sound.sampled.LineUnavailableException(
+                        "音效裝置無法配置播放緩衝區：" + lastOpenFailure);
+            }
             session.setLine(output);
             if (session.closed.get()) {
                 output.close();
