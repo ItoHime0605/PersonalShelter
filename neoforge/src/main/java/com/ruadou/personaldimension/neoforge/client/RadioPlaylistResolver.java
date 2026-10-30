@@ -228,8 +228,7 @@ public final class RadioPlaylistResolver {
                 }
                 checkCancelled(cancelled);
                 if (signature.length == 0) throw new IOException("電台備用串流沒有音訊資料");
-                String prefix = new String(signature, StandardCharsets.US_ASCII)
-                        .stripLeading().toLowerCase(Locale.ROOT);
+                String prefix = RadioAudioProbe.textPrefix(signature);
                 if (prefix.startsWith("#extm3u") || prefix.startsWith("[playlist]")) {
                     return new StreamProbe(uri.toString(), true);
                 }
@@ -314,8 +313,8 @@ public final class RadioPlaylistResolver {
                 byte[] signature = new byte[48];
                 int signatureLength = buffered.read(signature);
                 buffered.reset();
-                String leading = new String(signature, 0, Math.max(0, signatureLength),
-                        StandardCharsets.US_ASCII).stripLeading().toLowerCase(Locale.ROOT);
+                String leading = RadioAudioProbe.textPrefix(
+                        java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)));
                 boolean manifest = leading.startsWith("#extm3u")
                         || leading.startsWith("[playlist]") || leading.startsWith("#ext-x-");
                 if (!manifest && (audioType || (!isPlaylistPath(uri) && !playlistType
@@ -332,6 +331,8 @@ public final class RadioPlaylistResolver {
                     String line = readBoundedLine(reader, MAX_CHARS - chars, cancelled);
                     if (line == null) break;
                     chars += line.length();
+                    // UTF-8 M3U/M3U8 files may begin with a byte-order mark.
+                    if (i == 0 && line.startsWith("\uFEFF")) line = line.substring(1);
                     line = line.trim();
                     if (line.regionMatches(true, 0, "#EXT-X-", 0, 7)) {
                         throw new IOException("此電台使用 HLS 串流，目前尚不支援");

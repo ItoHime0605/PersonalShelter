@@ -192,11 +192,11 @@ public final class StandaloneRadioPlayer {
             try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 12)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
-                byte[] signature = input.readNBytes(12);
+                // Live AAC and MP3 streams may begin with ID3v2 metadata.
+                // Remove only the bounded tag before probing; leave audio bytes unread.
+                byte[] signature = RadioAudioProbe.peekAfterId3(input);
                 int signatureLength = signature.length;
-                if (signatureLength > 0) input.unread(signature, 0, signatureLength);
-                String prefix = new String(signature, 0, signatureLength,
-                        java.nio.charset.StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                String prefix = RadioAudioProbe.textPrefix(signature);
                 if (prefix.startsWith("<!doctype") || prefix.startsWith("<html")
                         || prefix.startsWith("<?xml") || prefix.startsWith("{\"error\"")) {
                     throw new IOException("電台網址回傳網頁或錯誤訊息，並非音訊串流");
@@ -309,18 +309,8 @@ public final class StandaloneRadioPlayer {
                                 output.flush();
                                 output.close();
                             }
-                            output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
-                            output.open(format, 32768);
-                            session.setLine(output);
-                            if (session.closed.get()) {
-                                output.close();
-                                return;
-                            }
-                            output.start();
-                            if (session.closed.get()) {
-                                output.close();
-                                return;
-                            }
+                            output = openAudioLine(session, format);
+                            if (output == null) return;
                         }
                         short[] samples = pcm.getBuffer();
                         int length = pcm.getBufferLength();
@@ -410,6 +400,33 @@ public final class StandaloneRadioPlayer {
         return "播放失敗：音訊解碼或播放發生錯誤";
     }
 
+    /**
+     * Open and register each playback device in one place. A failed open/start
+     * must close its native line even if it was never published to the session.
+     * The stop worker can still close a published line during a station switch.
+     */
+    private static SourceDataLine openAudioLine(Session session, AudioFormat format) throws Exception {
+        SourceDataLine output = (SourceDataLine) AudioSystem.getLine(
+                new DataLine.Info(SourceDataLine.class, format));
+        try {
+            output.open(format, 32768);
+            session.setLine(output);
+            if (session.closed.get()) {
+                output.close();
+                return null;
+            }
+            output.start();
+            if (session.closed.get()) {
+                output.close();
+                return null;
+            }
+            return output;
+        } catch (Exception failure) {
+            try { output.close(); } catch (Exception ignored) {}
+            throw failure;
+        }
+    }
+
     /** Write whole PCM frames in bounded chunks so stop/switch can release the line promptly. */
     private static void writePcm(Session session, SourceDataLine output, byte[] data,
                                  int length, int frameSize) throws IOException {
@@ -441,14 +458,8 @@ public final class StandaloneRadioPlayer {
                     source.getSampleRate(), 16, source.getChannels(),
                     source.getChannels() * 2, source.getSampleRate(), false);
             try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, encoded)) {
-                SourceDataLine output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, pcmFormat));
-                output.open(pcmFormat, 32768);
-                session.setLine(output);
-                if (session.closed.get()) {
-                    output.close();
-                    return;
-                }
-                output.start();
+                SourceDataLine output = openAudioLine(session, pcmFormat);
+                if (output == null) return;
                 // SourceDataLine requires writes aligned to whole PCM frames:
                 // 4 bytes for stereo 16-bit, not merely an even byte count.
                 int frameSize = pcmFormat.getFrameSize();
@@ -591,18 +602,8 @@ public final class StandaloneRadioPlayer {
                     output.flush();
                     output.close();
                 }
-                output = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, format));
-                output.open(format, 32768);
-                session.setLine(output);
-                if (session.closed.get()) {
-                    output.close();
-                    return;
-                }
-                output.start();
-                if (session.closed.get()) {
-                    output.close();
-                    return;
-                }
+                output = openAudioLine(session, format);
+                if (output == null) return;
             }
             double volume = ClientRadioVolume.get() / 100.0;
             boolean bigEndian = pcm.isBigEndian();
