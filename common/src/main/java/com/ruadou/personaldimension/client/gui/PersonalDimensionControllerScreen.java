@@ -177,9 +177,12 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
             && !dimension.equals(Platform.levelKeyFor(mc.player.getUUID()));
     }
 
+    private AbstractSliderButton volumeSlider;
+    private boolean draggingVolumeSlider;
+
     /** 拖曳時即時調整本機電台音量；左右按鈕仍可精準增減 1%。 */
     private void addVolumeSlider(int x, int y, int width, int height) {
-        this.addRenderableWidget(new AbstractSliderButton(x, y, width, height,
+        this.volumeSlider = this.addRenderableWidget(new AbstractSliderButton(x, y, width, height,
                 Component.literal("音量 " + ClientRadioVolume.get() + "%"), ClientRadioVolume.get() / 100.0D) {
             @Override
             protected void updateMessage() {
@@ -867,6 +870,14 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        draggingVolumeSlider = false;
+        if (button == 0 && volumeSlider != null && volumeSlider.isMouseOver(mouseX, mouseY)) {
+            draggingVolumeSlider = volumeSlider.mouseClicked(mouseX, mouseY, button);
+            if (draggingVolumeSlider) {
+                setFocused(volumeSlider);
+                return true;
+            }
+        }
         if (isVisitingFriendLand()) return super.mouseClicked(mouseX, mouseY, button);
         if (button == 0) {
             Tab clicked = tabAt(mouseX, mouseY);
@@ -891,6 +902,9 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && draggingVolumeSlider && volumeSlider != null) {
+            return volumeSlider.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
         if (this.teleportPanel != null && this.teleportPanel.mouseDragged(mouseX, mouseY, button)) {
             return true;
         }
@@ -899,6 +913,10 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (draggingVolumeSlider && volumeSlider != null) {
+            draggingVolumeSlider = false;
+            return volumeSlider.mouseReleased(mouseX, mouseY, button);
+        }
         if (this.teleportPanel != null) {
             this.teleportPanel.mouseReleased(mouseX, mouseY, button);
         }
