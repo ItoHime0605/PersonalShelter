@@ -53,7 +53,7 @@ public final class RadioAudioProbeSelfTest {
                 RadioAudioProbe.Kind.UNKNOWN); // Reserved sample-rate index 15.
         kind(new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 0, 0, 0},
                 RadioAudioProbe.Kind.UNKNOWN); // Frame shorter than ADTS header.
-        kind(new byte[] {(byte) 0xff, (byte) 0xf9, (byte) 0x90, 0x64},
+        kind(new byte[] {(byte) 0xff, (byte) 0xeb, (byte) 0x90, 0x64},
                 RadioAudioProbe.Kind.UNKNOWN); // Reserved MPEG version.
         kind(new byte[] {(byte) 0xff, (byte) 0xfb, 0x00, 0x64},
                 RadioAudioProbe.Kind.UNKNOWN); // Unsupported free bitrate.
