@@ -83,6 +83,23 @@ public final class RadioAudioProbeSelfTest {
             catch (IOException expected) { failed = true; }
             check(failed, "不支援的 ID3 版本必須拒絕");
         }
+        // ID3v2.4 reserves the lower four flag bits; rejecting them prevents
+        // accidentally skipping into a corrupt metadata body.
+        try (PushbackInputStream input = new PushbackInputStream(
+                new ByteArrayInputStream(new byte[] {'I', 'D', '3', 4, 0, 1, 0, 0, 0, 0, 1, 2}), 12)) {
+            boolean failed = false;
+            try { RadioAudioProbe.peekAfterId3(input); }
+            catch (IOException expected) { failed = true; }
+            check(failed, "ID3v2.4 保留旗標必須拒絕");
+        }
+        // Valid v2.4 footer must be skipped with the metadata body.
+        byte[] footerTag = new byte[] {'I', 'D', '3', 4, 0, 0x10, 0, 0, 0, 0,
+                '3', 'D', 'I', 4, 0, 0x10, 0, 0, 0, 0,
+                (byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 1, 0, 0};
+        try (PushbackInputStream input = new PushbackInputStream(
+                new ByteArrayInputStream(footerTag), 12)) {
+            kind(RadioAudioProbe.peekAfterId3(input), RadioAudioProbe.Kind.ADTS_AAC);
+        }
         System.out.println("RadioAudioProbeSelfTest: " + checks + " checks passed");
     }
 }
