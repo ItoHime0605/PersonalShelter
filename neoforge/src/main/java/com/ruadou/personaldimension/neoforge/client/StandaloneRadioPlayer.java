@@ -305,7 +305,7 @@ public final class StandaloneRadioPlayer {
             String message = exception.getMessage();
             if (message != null && !message.isBlank()) {
                 // Avoid long/line-breaking server responses overflowing the radio GUI.
-                String safe = message.replace('\\n', ' ').replace('\\r', ' ').trim();
+                String safe = message.replace('\n', ' ').replace('\r', ' ').trim();
                 return "播放失敗：" + safe.substring(0, Math.min(64, safe.length()));
             }
         }
