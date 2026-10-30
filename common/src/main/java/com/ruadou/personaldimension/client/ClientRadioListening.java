@@ -46,8 +46,9 @@ public final class ClientRadioListening {
 
     /** 播放器必須依此條件判斷，不得直接以地主的 enabled 旗標開始播放。 */
     public static boolean shouldPlay() {
+        // A zero-volume slider mutes PCM without tearing down the stream.
+        // Reopening the connection on every 0 -> 1 adjustment would restart live radio.
         return isListening() && ClientCurrentLandRadio.enabled()
-                && !ClientCurrentLandRadio.streamUrl().isBlank()
-                && ClientRadioVolume.get() > 0;
+                && !ClientCurrentLandRadio.streamUrl().isBlank();
     }
 }
