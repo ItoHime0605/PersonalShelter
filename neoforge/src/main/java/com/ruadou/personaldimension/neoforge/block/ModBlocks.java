@@ -7,6 +7,10 @@ import com.ruadou.personaldimension.block.LightningInterfaceBlock;
 import com.ruadou.personaldimension.block.MoonPhaseInterfaceBlock;
 import com.ruadou.personaldimension.block.TeleporterBlock;
 import com.ruadou.personaldimension.block.ShelterManagementTerminalBlock;
+import com.ruadou.personaldimension.block.ShelterRadioBlock;
+import net.minecraft.world.item.DyeColor;
+import java.util.EnumMap;
+import java.util.Map;
 import com.ruadou.personaldimension.block.TimeInterfaceBlock;
 import com.ruadou.personaldimension.block.WeatherInterfaceBlock;
 import com.ruadou.personaldimension.neoforge.PersonalDimension;
@@ -121,6 +125,25 @@ public class ModBlocks {
         ModItems.ITEMS.registerSimpleBlockItem("teleporter", TELEPORTER);
     public static final DeferredItem<BlockItem> FRIEND_VISITOR_TELEPORTER_ITEM =
         ModItems.ITEMS.registerSimpleBlockItem("friend_visitor_teleporter", FRIEND_VISITOR_TELEPORTER);
+
+    public static final DeferredBlock<Block> SHELTER_RADIO = BLOCKS.register("shelter_radio",
+        () -> new ShelterRadioBlock(BlockBehaviour.Properties.of().mapColor(MapColor.WOOD)
+            .strength(2.0F).sound(SoundType.WOOD).noOcclusion()));
+    public static final DeferredItem<BlockItem> SHELTER_RADIO_ITEM =
+        ModItems.ITEMS.registerSimpleBlockItem("shelter_radio", SHELTER_RADIO);
+
+    public static final Map<DyeColor, DeferredBlock<Block>> COLORED_RADIOS = new EnumMap<>(DyeColor.class);
+    public static final Map<DyeColor, DeferredItem<BlockItem>> COLORED_RADIO_ITEMS = new EnumMap<>(DyeColor.class);
+    static {
+        for (DyeColor dye : DyeColor.values()) {
+            String id = dye.getName() + "_shelter_radio";
+            DeferredBlock<Block> block = BLOCKS.register(id,
+                () -> new ShelterRadioBlock(BlockBehaviour.Properties.of().mapColor(dye.getMapColor())
+                    .strength(2.0F).sound(SoundType.WOOD).noOcclusion()));
+            COLORED_RADIOS.put(dye, block);
+            COLORED_RADIO_ITEMS.put(dye, ModItems.ITEMS.registerSimpleBlockItem(id, block));
+        }
+    }
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
