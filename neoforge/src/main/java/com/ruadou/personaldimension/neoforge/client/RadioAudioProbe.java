@@ -101,8 +101,12 @@ final class RadioAudioProbe {
             int second = signature[1] & 255;
             int third = signature[2] & 255;
             // MPEG sync, valid layer, non-reserved sample rate and bitrate.
-            if ((second & 0xe0) == 0xe0 && (second & 0x06) != 0
-                    && (third & 0x0c) != 0x0c && (third & 0xf0) != 0xf0) {
+            // Reject reserved MPEG version (01), reserved layer (00),
+            // free/invalid bitrate (0000/1111) and reserved sample rate (11).
+            if ((second & 0xe0) == 0xe0 && (second & 0x18) != 0x08
+                    && (second & 0x06) != 0
+                    && (third & 0x0c) != 0x0c
+                    && (third & 0xf0) != 0 && (third & 0xf0) != 0xf0) {
                 return Kind.MP3;
             }
         }
