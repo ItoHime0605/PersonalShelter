@@ -16,6 +16,10 @@ import javazoom.jl.decoder.SampleBuffer;
 import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.Header;
 import net.sourceforge.jaad.adts.ADTSDemultiplexer;
+import net.sourceforge.jaad.mp4.MP4Container;
+import net.sourceforge.jaad.mp4.api.AudioTrack;
+import net.sourceforge.jaad.mp4.api.Track;
+import java.util.List;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FilterInputStream;
@@ -55,10 +59,10 @@ public final class StandaloneRadioPlayer {
                 return;
             }
             if (active != null && url.equals(currentUrl)) return;
-            if (url.toLowerCase(Locale.ROOT).matches(".*\\.(m4a|mp4|m3u8)(\\?.*)?$")) {
+            if (url.toLowerCase(Locale.ROOT).matches(".*\\.m3u8(\\?.*)?$")) {
                 if (active != null) stopLocked();
                 currentUrl = url;
-                status = "不支援此串流格式（M4A／MP4／HLS）";
+                status = "此電台使用 HLS 播放清單，目前尚不支援";
                 ClientRadioPlaybackStatus.set(status);
                 return;
             }
@@ -142,13 +146,13 @@ public final class StandaloneRadioPlayer {
                 break;
             }
             String path = uri.getPath() == null ? "" : uri.getPath().toLowerCase(Locale.ROOT);
-            if (path.endsWith(".opus") || path.endsWith(".m4a") || path.endsWith(".mp4")) {
+            if (path.endsWith(".opus")) {
                 throw new IllegalArgumentException("目前不支援此音訊格式");
             }
             String contentType = conn.getContentType();
             if (contentType != null) {
                 String type = contentType.toLowerCase(Locale.ROOT).split(";", 2)[0].trim();
-                if (type.contains("mp4") || type.contains("opus")) {
+                if (type.contains("opus") || type.contains("mpegurl") || type.contains("scpls")) {
                     throw new IllegalArgumentException("不支援的電台音訊格式：" + type);
                 }
             }
@@ -169,13 +173,13 @@ public final class StandaloneRadioPlayer {
                 if (interval <= 0) throw new IOException("電台 ICY 中繼資料間隔無效");
                 networkAudio = new IcyMetadataInputStream(networkAudio, interval);
             }
-            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 4)) {
+            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 12)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
-                byte[] signature = input.readNBytes(4);
+                byte[] signature = input.readNBytes(12);
                 int signatureLength = signature.length;
                 if (signatureLength > 0) input.unread(signature, 0, signatureLength);
-                boolean oggSignature = signatureLength == 4
+                boolean oggSignature = signatureLength >= 4
                         && signature[0] == 'O' && signature[1] == 'g'
                         && signature[2] == 'g' && signature[3] == 'S';
                 boolean adtsSignature = signatureLength >= 2 && (signature[0] & 255) == 0xff
