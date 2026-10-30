@@ -218,6 +218,10 @@ public final class StandaloneRadioPlayer {
                 networkAudio = new IcyMetadataInputStream(networkAudio, interval);
             }
             try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 65536), 12)) {
+                // Register before signature probing: stop/switch must be able to
+                // interrupt a stalled header read, not just an active decoder.
+                session.setInput(input);
+                if (session.closed.get()) return;
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
                 // Live AAC and MP3 streams may begin with ID3v2 metadata.
