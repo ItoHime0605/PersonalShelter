@@ -22,6 +22,8 @@ public final class ClientRadioLifecycle {
             ClientCurrentLandRadio.clear();
             ClientLandRadioData.clear();
             StandaloneRadioPlayer.stop();
+            // Flush the last slider position once on disconnect, not on every drag.
+            ClientRadioVolume.flush();
         }
         wasInWorld = inWorld;
         StandaloneRadioPlayer.tick();

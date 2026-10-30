@@ -42,6 +42,8 @@ public final class StandaloneRadioPlayer {
     // On a playlist reconnect, prefer another source after the last one failed.
     private static volatile String failedStreamUrl = "";
     private static volatile String lastFailure = "";
+    // Unsupported HLS manifests must not be downloaded on every retry cycle.
+    private static volatile String unsupportedUrl = "";
     private static volatile String status = "已停止";
     private static final long RETRY_DELAY_MS = 10_000L;
     public static String status() { return status; }
@@ -61,13 +63,9 @@ public final class StandaloneRadioPlayer {
                 return;
             }
             if (active != null && url.equals(currentUrl)) return;
-            if (url.toLowerCase(Locale.ROOT).matches(".*\\.m3u8(\\?.*)?$")) {
-                if (active != null) stopLocked();
-                currentUrl = url;
-                status = "此電台使用 HLS 播放清單，目前尚不支援";
-                ClientRadioPlaybackStatus.set(status);
-                return;
-            }
+            // A .m3u8 URL can be a plain UTF-8 M3U radio playlist, not HLS.
+            // Let RadioPlaylistResolver inspect the manifest and reject actual HLS.
+            if (url.equals(unsupportedUrl)) return;
             if (!url.equals(failedUrl)) {
                 retryAfter = 0;
                 failedUrl = "";
@@ -100,6 +98,7 @@ public final class StandaloneRadioPlayer {
 
     private static void stopLocked() {
         Session old = active;
+        unsupportedUrl = "";
         active = null;
         currentUrl = "";
         if (old != null) {
@@ -324,6 +323,14 @@ public final class StandaloneRadioPlayer {
                 }
             }
         } catch (Exception ex) {
+            // Do not hammer unsupported HLS manifests every ten seconds.
+            // Changing stations or disabling/re-enabling listening clears this state.
+            String reason = ex.getMessage();
+            if (reason != null && reason.contains("HLS")) {
+                synchronized (LOCK) {
+                    if (active == session && !session.closed.get()) unsupportedUrl = session.url;
+                }
+            }
             if (!session.closed.get() && active == session) {
                 lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
                 status = describeFailure(ex);
