@@ -45,6 +45,12 @@ public final class RadioPcmSelfTest {
         invalid(() -> RadioPcm.scale16(aac, out, 4, 101, true));
         invalid(() -> RadioPcm.fromShorts(samples, 6, mp3, 50));
         invalid(() -> RadioPcm.fromShorts(samples, 5, new byte[9], 50));
+        check(RadioPcm.alignedBufferSize(32768, 2) == 32768, "單聲道緩衝區不應變動");
+        check(RadioPcm.alignedBufferSize(32768, 4) == 32768, "雙聲道緩衝區不應變動");
+        check(RadioPcm.alignedBufferSize(32768, 6) == 32772, "三聲道緩衝區必須對齊");
+        check(RadioPcm.alignedBufferSize(32768, 12) == 32772, "六聲道緩衝區必須對齊");
+        invalid(() -> RadioPcm.alignedBufferSize(32768, 0));
+        invalid(() -> RadioPcm.alignedBufferSize(0, 4));
         System.out.println("RadioPcmSelfTest: " + checks + " checks passed");
     }
 }
