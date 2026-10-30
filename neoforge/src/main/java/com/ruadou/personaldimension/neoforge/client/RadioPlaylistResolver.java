@@ -304,6 +304,14 @@ public final class RadioPlaylistResolver {
                 boolean manifest = RadioAudioProbe.classify(
                         java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)))
                         == RadioAudioProbe.Kind.PLAYLIST;
+                // HTTP 200 and audio/* are not proof of audio: radio servers
+                // sometimes return HTML errors under an audio MIME type.
+                // Reject these before treating a mislabeled playlist as a stream.
+                if (RadioAudioProbe.classify(
+                        java.util.Arrays.copyOf(signature, Math.max(0, signatureLength)))
+                        == RadioAudioProbe.Kind.NON_AUDIO) {
+                    throw new IOException("電台網址回傳網頁或錯誤訊息，並非音訊");
+                }
                 if (!manifest && (audioType || (!isPlaylistPath(uri) && !playlistType
                         && (finalPath.endsWith(".mp3") || finalPath.endsWith(".aac")
                         || finalPath.endsWith(".ogg") || finalPath.endsWith(".oga"))))) {
