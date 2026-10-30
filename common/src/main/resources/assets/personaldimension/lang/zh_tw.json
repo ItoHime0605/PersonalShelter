@@ -318,5 +318,22 @@
   "item.personaldimension.shelter_permit_lv4": "§e§l四級土地擴張許可證",
   "gui.personaldimension.controller.settings.shelter_upgrade": "土地擴張",
   "gui.personaldimension.controller.settings.theme": "介面選擇",
-  "block.personaldimension.shelter_management_terminal": "私人土地管理終端"
+  "block.personaldimension.shelter_management_terminal": "私人土地管理終端",
+  "block.personaldimension.shelter_radio": "復古收音機",
+  "block.personaldimension.white_shelter_radio": "白色復古收音機",
+  "block.personaldimension.orange_shelter_radio": "橘色復古收音機",
+  "block.personaldimension.magenta_shelter_radio": "洋紅色復古收音機",
+  "block.personaldimension.light_blue_shelter_radio": "淺藍色復古收音機",
+  "block.personaldimension.yellow_shelter_radio": "黃色復古收音機",
+  "block.personaldimension.lime_shelter_radio": "淺綠色復古收音機",
+  "block.personaldimension.pink_shelter_radio": "粉紅色復古收音機",
+  "block.personaldimension.gray_shelter_radio": "灰色復古收音機",
+  "block.personaldimension.light_gray_shelter_radio": "淺灰色復古收音機",
+  "block.personaldimension.cyan_shelter_radio": "青色復古收音機",
+  "block.personaldimension.purple_shelter_radio": "紫色復古收音機",
+  "block.personaldimension.blue_shelter_radio": "藍色復古收音機",
+  "block.personaldimension.brown_shelter_radio": "棕色復古收音機",
+  "block.personaldimension.green_shelter_radio": "綠色復古收音機",
+  "block.personaldimension.red_shelter_radio": "紅色復古收音機",
+  "block.personaldimension.black_shelter_radio": "黑色復古收音機"
 }
