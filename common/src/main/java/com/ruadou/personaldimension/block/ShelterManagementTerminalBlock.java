@@ -20,11 +20,27 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.Shapes;
 
 /** Desk-mounted, rotatable shelter management laptop. */
 public final class ShelterManagementTerminalBlock extends Block {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-    private static final VoxelShape SHAPE = net.minecraft.world.level.block.Block.box(1, 0, 1, 15, 10, 15);
+    // The laptop model has a thin 2.7px keyboard base and a nearly 14px tall
+    // upright display. A single 10px cuboid left the upper screen untargetable
+    // and blocked empty space in front of the keyboard. Match both parts and
+    // rotate their hitboxes with the blockstate, just like the JSON model.
+    private static final VoxelShape NORTH_SHAPE = Shapes.or(
+            Block.box(0.65, 0, 2, 15.35, 2.7, 13),
+            Block.box(1, 2.2, 10.3, 15, 14.1, 12.4)).optimize();
+    private static final VoxelShape EAST_SHAPE = Shapes.or(
+            Block.box(3, 0, 0.65, 14, 2.7, 15.35),
+            Block.box(3.6, 2.2, 1, 5.7, 14.1, 15)).optimize();
+    private static final VoxelShape SOUTH_SHAPE = Shapes.or(
+            Block.box(0.65, 0, 3, 15.35, 2.7, 14),
+            Block.box(1, 2.2, 3.6, 15, 14.1, 5.7)).optimize();
+    private static final VoxelShape WEST_SHAPE = Shapes.or(
+            Block.box(2, 0, 0.65, 13, 2.7, 15.35),
+            Block.box(10.3, 2.2, 1, 12.4, 14.1, 15)).optimize();
 
     public ShelterManagementTerminalBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -40,7 +56,12 @@ public final class ShelterManagementTerminalBlock extends Block {
     }
 
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return switch (state.getValue(FACING)) {
+            case EAST -> EAST_SHAPE;
+            case SOUTH -> SOUTH_SHAPE;
+            case WEST -> WEST_SHAPE;
+            default -> NORTH_SHAPE;
+        };
     }
 
     @Override
