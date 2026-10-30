@@ -5,7 +5,7 @@ import dev.architectury.event.events.common.EntityEvent;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.MobCategory;
 import com.ruadou.personaldimension.platform.Platform;
 
 public final class SpawnControlEvents {
@@ -22,7 +22,9 @@ public final class SpawnControlEvents {
             }
             // Personal Shelter: never allow natural hostile mob spawns in private dimensions.
             // Spawn eggs, commands and other deliberate sources are unaffected by this rule.
-            if (entity instanceof Monster
+            // Modded zombies may not extend vanilla Monster; their registered
+            // entity category is the reliable cross-mod hostile classification.
+            if (mob.getType().getCategory() == MobCategory.MONSTER
                     && Platform.ownerOf(serverLevel.dimension()).isPresent()
                     && SpawnControlService.isNatural(type)) {
                 return EventResult.interruptFalse();
