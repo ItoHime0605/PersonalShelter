@@ -80,9 +80,16 @@ final class RadioAudioProbe {
                 && signature[6] == 'y' && signature[7] == 'p') {
             return Kind.MP4_AAC;
         }
-        if (signature.length >= 2 && (signature[0] & 255) == 255
+        // Validate the full ADTS fixed/variable header before choosing JAAD.
+        if (signature.length >= 7 && (signature[0] & 255) == 255
                 && (signature[1] & 0xf6) == 0xf0) {
-            return Kind.ADTS_AAC;
+            int frequencyIndex = (signature[2] >>> 2) & 15;
+            int frameLength = ((signature[3] & 3) << 11)
+                    | ((signature[4] & 255) << 3) | ((signature[5] >>> 5) & 7);
+            int headerLength = (signature[1] & 1) != 0 ? 7 : 9;
+            if (frequencyIndex != 15 && frameLength >= headerLength) {
+                return Kind.ADTS_AAC;
+            }
         }
         // A leading ID3 tag is an MP3 hint only. The main player first strips
         // bounded ID3v2 tags and reclassifies the actual AAC/MP3 payload.
