@@ -55,6 +55,13 @@ public final class StandaloneRadioPlayer {
                 return;
             }
             if (active != null && url.equals(currentUrl)) return;
+            if (url.toLowerCase(Locale.ROOT).matches(".*\\\\.(m4a|mp4|m3u8)(\\\\?.*)?$")) {
+                if (active != null) stopLocked();
+                currentUrl = url;
+                status = "不支援此串流格式（M4A／MP4／HLS）";
+                ClientRadioPlaybackStatus.set(status);
+                return;
+            }
             if (!url.equals(failedUrl)) {
                 retryAfter = 0;
                 failedUrl = "";
