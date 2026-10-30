@@ -57,6 +57,12 @@ public final class RadioAudioProbeSelfTest {
                 RadioAudioProbe.Kind.UNKNOWN); // Reserved MPEG version.
         kind(new byte[] {(byte) 0xff, (byte) 0xfb, 0x00, 0x64},
                 RadioAudioProbe.Kind.UNKNOWN); // Unsupported free bitrate.
+        kind(new byte[] {(byte) 0xff, (byte) 0xfb, (byte) 0x9c, 0x64},
+                RadioAudioProbe.Kind.UNKNOWN); // Reserved MPEG sample rate.
+        kind(new byte[] {(byte) 0xff, (byte) 0xf9, (byte) 0x90, 0x64},
+                RadioAudioProbe.Kind.UNKNOWN); // Reserved MPEG layer.
+        kind(new byte[] {(byte) 0xff, (byte) 0xfb, (byte) 0xf0, 0x64},
+                RadioAudioProbe.Kind.UNKNOWN); // Invalid MP3 bitrate index.
         byte[] aac = new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 1, 2, 3, 4, 5, 6, 7, 8};
         try (PushbackInputStream input = new PushbackInputStream(
                 new ByteArrayInputStream(withId3(aac)), 12)) {
