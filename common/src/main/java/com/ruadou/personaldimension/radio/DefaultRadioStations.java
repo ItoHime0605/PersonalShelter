@@ -7,9 +7,7 @@ public final class DefaultRadioStations {
     private DefaultRadioStations() {}
     public record Entry(String id, String name, String url) {}
     public static final List<Entry> ENTRIES = List.of(
-        new Entry("station_02", "飛碟聯播網", "https://stream.rcs.revma.com/em90w4aeewzuv.m4a"),
-        new Entry("station_03", "i Radio 中廣音樂網", "https://stream.rcs.revma.com/ks4vsmg3qtzuv"),
-        new Entry("station_04", "中廣流行網", "https://stream.rcs.revma.com/s1zttsg3qtzuv"),
+        new Entry("station_02", "港都電台 FM98.3", "https://stream.rcs.revma.com/q2m07dc59duvv"),
         new Entry("station_05", "Big B Radio JPOP", "http://82.145.63.122:9700/s"),
         new Entry("station_07", "Vocaloid Radio", "http://curiosity.shoutca.st:8019/stream"),
         new Entry("station_09", "Radio Paradise", "http://stream-dc1.radioparadise.com/mp3-128"),
