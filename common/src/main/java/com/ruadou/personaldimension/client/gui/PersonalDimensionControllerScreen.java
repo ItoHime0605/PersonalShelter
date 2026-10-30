@@ -121,6 +121,8 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         this.shelterNameInput = null;
         this.radioNameInput = null;
         this.radioUrlInput = null;
+        this.volumeSlider = null;
+        this.draggingVolumeSlider = false;
         this.activePanel = null;
         // 注意：teleportPanel 不在此重置——rebuildPanel() 会触发 init()，
         // 若每次 new 新实例则 selectedIndex/scrollOffset 丢失，导致编辑和滚动失效。
