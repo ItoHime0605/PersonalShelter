@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AbstractContainerMenu.class)
 public abstract class ContainerMenuClickMixin {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("Personaldimension");
+    private static final Logger personaldimension$serverLogger = LoggerFactory.getLogger("Personaldimension");
 
     @Shadow
     public abstract ItemStack getCarried();
@@ -32,7 +32,7 @@ public abstract class ContainerMenuClickMixin {
     @Shadow
     public abstract void setCarried(ItemStack stack);
 
-    private static boolean isDropAction(int slotNum, ClickType clickType) {
+    private static boolean personaldimension$serverIsDropAction(int slotNum, ClickType clickType) {
         // THROW: Q键丢弃
         // PICKUP + slot=-999: 拖拽物品到容器外松开（丢弃）
         // 注意：QUICK_CRAFT + slot=-999 是拖拽分配的开始/结束信号，不是丢弃！
@@ -47,10 +47,10 @@ public abstract class ContainerMenuClickMixin {
     @Inject(method = "clicked", at = @At("HEAD"), cancellable = true)
     private void personaldimension$clicked(int slotNum, int buttonNum, ClickType clickType, Player player, CallbackInfo ci) {
         if (player.level().isClientSide()) return; // 客户端由 client mixin 处理
-        if (!isDropAction(slotNum, clickType)) return;
+        if (!personaldimension$serverIsDropAction(slotNum, clickType)) return;
 
         if (GuardService.deny(player, Permission.DROP_ITEM)) {
-            LOGGER.info("[NeoForge-clicked-拦截] slot={}, clickType={}", slotNum, clickType);
+            personaldimension$serverLogger.info("[NeoForge-clicked-拦截] slot={}, clickType={}", slotNum, clickType);
             GuardService.resyncInventory(player);
             ci.cancel();
         }
@@ -74,7 +74,7 @@ public abstract class ContainerMenuClickMixin {
         // 把光标物品放回背包，清空光标，取消原版丢弃
         player.getInventory().placeItemBackInInventory(carried);
         setCarried(ItemStack.EMPTY);
-        LOGGER.info("[NeoForge-removed] 关闭容器时光标物品已放回背包: player={}", player.getName());
+        personaldimension$serverLogger.info("[NeoForge-removed] 关闭容器时光标物品已放回背包: player={}", player.getName());
         ci.cancel();
     }
 }
