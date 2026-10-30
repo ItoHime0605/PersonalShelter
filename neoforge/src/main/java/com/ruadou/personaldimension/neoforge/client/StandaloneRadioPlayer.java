@@ -434,7 +434,20 @@ public final class StandaloneRadioPlayer {
                     if (output.isOpen()) output.close();
                 }
             }
+            if (!opened && !session.closed.get()) {
+                // Some mixers only support their own default buffer size.
+                // Explicit buffer sizes can all fail even when plain open works.
+                try {
+                    output.open(format);
+                    opened = true;
+                } catch (javax.sound.sampled.LineUnavailableException
+                        | IllegalArgumentException failure) {
+                    lastOpenFailure = failure;
+                    if (output.isOpen()) output.close();
+                }
+            }
             if (!opened) {
+                if (session.closed.get()) return null;
                 throw new javax.sound.sampled.LineUnavailableException(
                         "音效裝置無法配置播放緩衝區：" + lastOpenFailure);
             }
@@ -462,6 +475,13 @@ public final class StandaloneRadioPlayer {
         int chunkSize = Math.max(frameSize, (8192 / frameSize) * frameSize);
         for (int offset = 0; offset < length && !session.closed.get();) {
             int requested = Math.min(chunkSize, length - offset);
+            // Never block forever trying to fill a stopped mixer whose
+            // available capacity is smaller than its advertised buffer.
+            // Start early if the next write cannot fit, then let the device drain.
+            if (!output.isRunning() && !session.closed.get() && output.isOpen()
+                    && output.available() < requested) {
+                output.start();
+            }
             int written = output.write(data, offset, requested);
             if (written <= 0 || written % frameSize != 0) {
                 if (session.closed.get()) return;
