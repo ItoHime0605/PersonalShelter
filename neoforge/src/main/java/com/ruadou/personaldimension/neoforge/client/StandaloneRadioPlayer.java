@@ -301,10 +301,6 @@ public final class StandaloneRadioPlayer {
                                 output.close();
                                 return;
                             }
-                            if (active == session) {
-                                status = "播放中";
-                                ClientRadioPlaybackStatus.set(status);
-                            }
                         }
                         short[] samples = pcm.getBuffer();
                         int length = pcm.getBufferLength();
@@ -317,6 +313,7 @@ public final class StandaloneRadioPlayer {
                             bytes[i * 2 + 1] = (byte) (value >>> 8);
                         }
                         writePcm(session, output, bytes, byteLength, format.getFrameSize());
+                        if (byteLength > 0) markPlaying(session);
                     } finally {
                         stream.closeFrame();
                     }
@@ -331,10 +328,12 @@ public final class StandaloneRadioPlayer {
                     if (active == session && !session.closed.get()) unsupportedUrl = session.url;
                 }
             }
-            if (!session.closed.get() && active == session) {
-                lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-                status = describeFailure(ex);
-                ClientRadioPlaybackStatus.set(status);
+            synchronized (LOCK) {
+                if (!session.closed.get() && active == session) {
+                    lastFailure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+                    status = describeFailure(ex);
+                    ClientRadioPlaybackStatus.set(status);
+                }
             }
         } finally {
             boolean interrupted = session.closed.get();
@@ -351,6 +350,20 @@ public final class StandaloneRadioPlayer {
                         ClientRadioPlaybackStatus.set(status);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Publish the playing state only after a complete PCM buffer was accepted.
+     * Serializing with stop/switch prevents a cancelled session from briefly
+     * marking a newer station as playing (and stopping vanilla music).
+     */
+    private static void markPlaying(Session session) {
+        synchronized (LOCK) {
+            if (active == session && !session.closed.get() && !"播放中".equals(status)) {
+                status = "播放中";
+                ClientRadioPlaybackStatus.set(status);
             }
         }
     }
@@ -413,10 +426,6 @@ public final class StandaloneRadioPlayer {
                     return;
                 }
                 output.start();
-                if (active == session) {
-                    status = "播放中";
-                    ClientRadioPlaybackStatus.set(status);
-                }
                 // SourceDataLine requires writes aligned to whole PCM frames:
                 // 4 bytes for stereo 16-bit, not merely an even byte count.
                 int frameSize = pcmFormat.getFrameSize();
@@ -447,7 +456,10 @@ public final class StandaloneRadioPlayer {
                         buffer[i] = (byte) scaled;
                         buffer[i + 1] = (byte) (scaled >>> 8);
                     }
-                    if (aligned > 0) writePcm(session, output, buffer, aligned, frameSize);
+                    if (aligned > 0) {
+                        writePcm(session, output, buffer, aligned, frameSize);
+                        markPlaying(session);
+                    }
                     // Preserve a partial frame without corrupting the next chunk.
                     if (remainder > 0) System.arraycopy(buffer, aligned, buffer, 0, remainder);
                     pending = remainder;
@@ -554,10 +566,6 @@ public final class StandaloneRadioPlayer {
                     output.close();
                     return;
                 }
-                if (active == session) {
-                    status = "播放中";
-                    ClientRadioPlaybackStatus.set(status);
-                }
             }
             double volume = ClientRadioVolume.get() / 100.0;
             boolean bigEndian = pcm.isBigEndian();
@@ -570,6 +578,7 @@ public final class StandaloneRadioPlayer {
                 scaledPcm[i + 1] = bigEndian ? (byte) scaled : (byte) (scaled >>> 8);
             }
             writePcm(session, output, scaledPcm, decoded.length, frameSize);
+            markPlaying(session);
         }
     }
 
@@ -601,7 +610,13 @@ public final class StandaloneRadioPlayer {
             while (metadataBytes > 0) {
                 int count = in.read(discard, 0, Math.min(metadataBytes, discard.length));
                 if (count < 0) throw new EOFException("電台 ICY 中繼資料遭到截斷");
-                if (count == 0) continue;
+                if (count == 0) {
+                    // Some HTTP stream wrappers return zero on a bulk read.
+                    // Fall back to one byte rather than spinning indefinitely.
+                    if (in.read() < 0) throw new EOFException("電台 ICY 中繼資料遭到截斷");
+                    metadataBytes--;
+                    continue;
+                }
                 metadataBytes -= count;
             }
             remaining = interval;
@@ -626,6 +641,16 @@ public final class StandaloneRadioPlayer {
             if (remaining == 0) advance();
             if (ended) return -1;
             int count = in.read(bytes, offset, Math.min(length, remaining));
+            if (count == 0) {
+                int single = in.read();
+                if (single < 0) {
+                    ended = true;
+                    return -1;
+                }
+                bytes[offset] = (byte) single;
+                remaining--;
+                return 1;
+            }
             if (count < 0) ended = true;
             else remaining -= count;
             return count;
