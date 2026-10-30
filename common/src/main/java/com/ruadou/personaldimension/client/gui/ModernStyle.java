@@ -122,7 +122,7 @@ public final class ModernStyle {
             {0xFFD6EFF6,0xFFB8E1ED,0xFFEAF9FD,0xFF86BED0,0xFF244A5B,0xFF47798B,0xFF299FC4},
             {0xFF090A0C,0xFF121417,0xFF1B1D21,0xFF373B44,0xFFF0F1F3,0xFFA4ABB5,0xFF8AABDD},
             {0xFF414448,0xFF50545A,0xFF5B6066,0xFF777E85,0xFFE3E5E8,0xFFBFC5CB,0xFF9BA9B4},
-            {0xFF14221A,0xFF1A3020,0xFF203A27,0xFF386749,0xFFB2F58C,0xFF86C878,0xFF8FEE70},
+            {0xFF111C16,0xFF1B2C22,0xFF263A2D,0xFF54735B,0xFFF1F5E9,0xFFD1DDC8,0xFF83C78C},
             {0xFF291B3D,0xFF3E2557,0xFF4E2B69,0xFF9153B1,0xFFF3C3FF,0xFFCF9FE8,0xFFDB65C8}
         };
         int[] c = palette[selectedTheme];
@@ -130,7 +130,7 @@ public final class ModernStyle {
         CARD_BORDER=c[3]; BTN_BORDER=c[3]; DIVIDER=c[3];
         TEXT=c[4]; TEXT_SUB=c[5]; TEXT_WEAK=c[5]; ACCENT=c[6];
         ACCENT_HOVER=lighten(c[6],0.14f);
-        ACCENT_TEXT=c[4]; GHOST_FILL=withAlpha(c[2],0xBB);
+        ACCENT_TEXT=selectedTheme == 8 ? 0xFF102317 : c[4]; GHOST_FILL=withAlpha(c[2],0xBB);
         GHOST_FILL_HOVER=withAlpha(c[6],0x55);
         SLOT_BG=darken(c[0],0.08f); SLOT_BORDER=darken(c[3],0.18f);
         if (save) {
