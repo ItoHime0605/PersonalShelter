@@ -17,6 +17,9 @@ import com.ruadou.personaldimension.friend.Permission;
 import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 import com.ruadou.personaldimension.shelter.ShelterBoundary;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.MobCategory;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
+import com.ruadou.personaldimension.spawn.SpawnControlService;
 import net.minecraft.core.BlockPos;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
@@ -47,6 +50,28 @@ public final class PersonalDimensionGuardEvents {
     private static final Map<UUID, String> LAST_BORDER_STATE = new ConcurrentHashMap<>();
 
     private PersonalDimensionGuardEvents() {}
+
+
+    /**
+     * NeoForge-native spawn guards. These run before an entity joins the level,
+     * including spawn placement paths not covered by Architectury's check hook.
+     * Deliberate spawn eggs and commands are not blocked.
+     */
+    @SubscribeEvent
+    public static void onShelterSpawnPlacement(MobSpawnEvent.SpawnPlacementCheck event) {
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER
+                || !SpawnControlService.isNatural(event.getSpawnType())) return;
+        if (ModDimensions.ownerOf(event.getLevel().getLevel().dimension()).isEmpty()) return;
+        event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
+    }
+
+    @SubscribeEvent
+    public static void onShelterSpawnPosition(MobSpawnEvent.PositionCheck event) {
+        if (event.getEntity().getType().getCategory() != MobCategory.MONSTER
+                || !SpawnControlService.isNatural(event.getSpawnType())) return;
+        if (ModDimensions.ownerOf(event.getLevel().getLevel().dimension()).isEmpty()) return;
+        event.setResult(MobSpawnEvent.PositionCheck.Result.FAIL);
+    }
 
     /**
      * 维度切换前置检查：NeoForge 提供 EntityTravelToDimensionEvent 可取消，
