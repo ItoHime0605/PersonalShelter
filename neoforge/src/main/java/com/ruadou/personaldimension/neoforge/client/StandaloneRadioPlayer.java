@@ -394,7 +394,7 @@ public final class StandaloneRadioPlayer {
         SourceDataLine output = (SourceDataLine) AudioSystem.getLine(
                 new DataLine.Info(SourceDataLine.class, format));
         try {
-            output.open(format, 32768);
+            output.open(format, RadioPcm.alignedBufferSize(32768, format.getFrameSize()));
             session.setLine(output);
             if (session.closed.get()) {
                 output.close();
