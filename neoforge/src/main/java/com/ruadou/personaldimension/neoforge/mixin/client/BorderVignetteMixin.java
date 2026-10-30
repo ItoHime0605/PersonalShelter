@@ -1,28 +1,34 @@
 package com.ruadou.personaldimension.neoforge.mixin.client;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.ruadou.personaldimension.platform.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Avoid fragile redirects into the vanilla vignette's internal border call.
- * Some rendering mods replace that invocation, causing a critical Mixin
- * injection failure before the client can reach the title screen.
+ * In private shelters, hide the world-border red warning until the player
+ * actually touches the border (distance <= 0). Keep the vanilla vignette and
+ * all server-side world-border rules intact.
  *
- * Suppress the vignette in personal dimensions only. This does not change
- * server-side world-border enforcement, collision or protection.
+ * A non-required expression modifier avoids the critical injection failure
+ * if another rendering mod replaces the internal border-distance invocation.
  */
 @Mixin(Gui.class)
 public abstract class BorderVignetteMixin {
-    @Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true, require = 0)
-    private void personaldimension$hidePrivateBorderWarning(CallbackInfo ci) {
+    @ModifyExpressionValue(
+        method = "renderVignette",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/border/WorldBorder;getDistanceToBorder(DD)D"),
+        require = 0
+    )
+    private double personaldimension$warnOnlyAtBorder(double distance) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && Platform.isPersonalDimension(mc.level.dimension())) {
-            ci.cancel();
+        if (mc.level != null && Platform.isPersonalDimension(mc.level.dimension())
+                && distance > 0.0D) {
+            return 1.0E9D;
         }
+        return distance;
     }
 }
