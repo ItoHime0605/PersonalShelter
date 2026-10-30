@@ -426,7 +426,11 @@ public final class StandaloneRadioPlayer {
         List<Track> tracks = container.getMovie().getTracks(AudioTrack.AudioCodec.AAC);
         if (tracks.isEmpty()) throw new IOException("M4A／MP4 檔案沒有支援的 AAC 音軌");
         Track track = tracks.get(0);
-        playAacFrames(session, track.getDecoderSpecificInfo(), track::readNextFrame);
+        playAacFrames(session, track.getDecoderSpecificInfo(), () -> {
+            if (!track.hasMoreFrames()) return null;
+            net.sourceforge.jaad.mp4.api.Frame frame = track.readNextFrame();
+            return frame == null ? null : frame.getData();
+        });
     }
 
     private static void playAacFrames(Session session, byte[] decoderSpecificInfo,
