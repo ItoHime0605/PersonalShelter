@@ -201,7 +201,11 @@ public final class StandaloneRadioPlayer {
                 } catch (NumberFormatException exception) {
                     throw new IOException("電台 ICY 中繼資料間隔無效", exception);
                 }
-                if (interval <= 0) throw new IOException("電台 ICY 中繼資料間隔無效");
+                // Reject implausibly large intervals before handing an untrusted
+                // HTTP stream to the decoders. A corrupt metaint can otherwise
+                // postpone metadata handling indefinitely and hide stream errors.
+                if (interval <= 0 || interval > 16 * 1024 * 1024)
+                    throw new IOException("電台 ICY 中繼資料間隔無效");
                 networkAudio = new IcyMetadataInputStream(networkAudio, interval);
             }
             try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 12)) {
@@ -616,7 +620,8 @@ public final class StandaloneRadioPlayer {
 
         IcyMetadataInputStream(InputStream source, int interval) {
             super(source);
-            if (interval <= 0) throw new IllegalArgumentException("ICY interval must be positive");
+            if (interval <= 0 || interval > 16 * 1024 * 1024)
+                throw new IllegalArgumentException("ICY interval must be within 1..16777216");
             this.interval = interval;
             this.remaining = interval;
         }
