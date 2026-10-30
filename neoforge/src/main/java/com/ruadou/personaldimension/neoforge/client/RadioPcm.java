@@ -24,8 +24,11 @@ final class RadioPcm {
 
     private static short scale(short sample, int volume) {
         if (volume == 100) return sample; // Bit-exact full volume.
-        long value = Math.round(sample * (volume / 100.0));
-        return (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
+        // Round positive and negative amplitudes symmetrically. Math.round()
+        // rounds negative half-steps toward zero, creating a DC bias at low volume.
+        int magnitude = Math.abs((int) sample);
+        int scaled = (magnitude * volume + 50) / 100;
+        return (short) (sample < 0 ? -scaled : scaled);
     }
 
     /** Convert JLayer's interleaved samples to little-endian 16-bit PCM. */
