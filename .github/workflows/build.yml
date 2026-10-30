@@ -1,9 +1,8 @@
 name: Build NeoForge 1.21.1 (Java 21)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Manual build: private repositories consume hosted-runner minutes.
+  # Build once after a feature batch, not for every source/version commit.
   workflow_dispatch:
 
 jobs:
