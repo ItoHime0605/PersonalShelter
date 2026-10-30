@@ -24,6 +24,8 @@ public class ModCreativeModeTabs {
                 output.accept(ModItems.PERSONAL_DIMENSION_GENERATOR);
                 output.accept(ModItems.PERSONAL_DIMENSION_CONTROLLER);
                 output.accept(ModBlocks.SHELTER_MANAGEMENT_TERMINAL_ITEM);
+                output.accept(ModBlocks.SHELTER_RADIO_ITEM);
+                for (var item : ModBlocks.COLORED_RADIO_ITEMS.values()) output.accept(item);
                 output.accept(ModItems.SHELTER_PERMIT_LV1);
                 output.accept(ModItems.SHELTER_PERMIT_LV2);
                 output.accept(ModItems.SHELTER_PERMIT_LV3);
