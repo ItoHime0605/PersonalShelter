@@ -208,7 +208,7 @@ public final class StandaloneRadioPlayer {
                     throw new IOException("電台 ICY 中繼資料間隔無效");
                 networkAudio = new IcyMetadataInputStream(networkAudio, interval);
             }
-            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 32768), 12)) {
+            try (PushbackInputStream input = new PushbackInputStream(new BufferedInputStream(networkAudio, 65536), 12)) {
                 // Radio servers often return application/octet-stream or omit file extensions.
                 // Detect the Ogg container signature instead of relying on HTTP metadata alone.
                 // Live AAC and MP3 streams may begin with ID3v2 metadata.
@@ -413,7 +413,11 @@ public final class StandaloneRadioPlayer {
         SourceDataLine output = (SourceDataLine) AudioSystem.getLine(
                 new DataLine.Info(SourceDataLine.class, format));
         try {
-            output.open(format, RadioPcm.alignedBufferSize(32768, format.getFrameSize()));
+            // Reserve about 0.7 seconds at 48 kHz stereo 16-bit PCM so
+            // brief network/decoder scheduling stalls do not underrun audio.
+            // This does not delay stop/switch: writes remain bounded and
+            // cancellation closes the output line.
+            output.open(format, RadioPcm.alignedBufferSize(131072, format.getFrameSize()));
             session.setLine(output);
             if (session.closed.get()) {
                 output.close();
