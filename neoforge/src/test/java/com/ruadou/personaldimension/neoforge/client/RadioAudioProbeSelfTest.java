@@ -48,6 +48,15 @@ public final class RadioAudioProbeSelfTest {
         kind(text("{"), RadioAudioProbe.Kind.NON_AUDIO);
         kind(new byte[] {(byte) 0xff, (byte) 0xfb, (byte) 0xfc, 0x00},
                 RadioAudioProbe.Kind.UNKNOWN);
+        // Corrupt ADTS frames must not be routed to the AAC decoder.
+        kind(new byte[] {(byte) 0xff, (byte) 0xf1, 0x7c, (byte) 0x80, 1, 2, 0},
+                RadioAudioProbe.Kind.UNKNOWN); // Reserved sample-rate index 15.
+        kind(new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 0, 0, 0},
+                RadioAudioProbe.Kind.UNKNOWN); // Frame shorter than ADTS header.
+        kind(new byte[] {(byte) 0xff, (byte) 0xf9, (byte) 0x90, 0x64},
+                RadioAudioProbe.Kind.UNKNOWN); // Reserved MPEG version.
+        kind(new byte[] {(byte) 0xff, (byte) 0xfb, 0x00, 0x64},
+                RadioAudioProbe.Kind.UNKNOWN); // Unsupported free bitrate.
         byte[] aac = new byte[] {(byte) 0xff, (byte) 0xf1, 0x50, (byte) 0x80, 1, 2, 3, 4, 5, 6, 7, 8};
         try (PushbackInputStream input = new PushbackInputStream(
                 new ByteArrayInputStream(withId3(aac)), 12)) {
@@ -60,6 +69,13 @@ public final class RadioAudioProbeSelfTest {
             try { RadioAudioProbe.peekAfterId3(input); }
             catch (IOException expected) { failed = true; }
             check(failed, "不完整 ID3 標頭必須拒絕");
+        }
+        try (PushbackInputStream input = new PushbackInputStream(
+                new ByteArrayInputStream(new byte[] {'I', 'D', '3', 5, 0, 0, 0, 0, 0, 0, 1, 2}), 12)) {
+            boolean failed = false;
+            try { RadioAudioProbe.peekAfterId3(input); }
+            catch (IOException expected) { failed = true; }
+            check(failed, "不支援的 ID3 版本必須拒絕");
         }
         System.out.println("RadioAudioProbeSelfTest: " + checks + " checks passed");
     }
