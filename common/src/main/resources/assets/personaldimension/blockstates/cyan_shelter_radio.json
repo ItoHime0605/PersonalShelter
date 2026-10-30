@@ -1,0 +1,1 @@
+{"variants":{"facing=north":{"model":"personaldimension:block/cyan_shelter_radio","y":0},"facing=east":{"model":"personaldimension:block/cyan_shelter_radio","y":90},"facing=south":{"model":"personaldimension:block/cyan_shelter_radio","y":180},"facing=west":{"model":"personaldimension:block/cyan_shelter_radio","y":270}}}
