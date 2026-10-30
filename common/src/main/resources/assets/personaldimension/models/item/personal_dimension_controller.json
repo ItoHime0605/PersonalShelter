@@ -1407,70 +1407,70 @@
     },
     "firstperson_righthand": {
       "rotation": [
-        0,
-        180,
-        0
+        -17,
+        158,
+        13
       ],
       "translation": [
         0,
-        0,
-        0
+        -0.7,
+        -1.4
       ],
       "scale": [
-        0.8,
-        0.8,
-        0.8
+        0.68,
+        0.68,
+        0.68
       ]
     },
     "firstperson_lefthand": {
       "rotation": [
-        0,
-        180,
-        0
+        -17,
+        202,
+        -13
       ],
       "translation": [
         0,
-        0,
-        0
+        -0.7,
+        -1.4
       ],
       "scale": [
-        0.8,
-        0.8,
-        0.8
+        0.68,
+        0.68,
+        0.68
       ]
     },
     "thirdperson_righthand": {
       "rotation": [
-        0,
-        180,
-        0
+        -8,
+        163,
+        12
       ],
       "translation": [
         0,
-        2,
+        1.5,
         0
       ],
       "scale": [
-        0.65,
-        0.65,
-        0.65
+        0.6,
+        0.6,
+        0.6
       ]
     },
     "thirdperson_lefthand": {
       "rotation": [
-        0,
-        180,
-        0
+        -8,
+        197,
+        -12
       ],
       "translation": [
         0,
-        2,
+        1.5,
         0
       ],
       "scale": [
-        0.65,
-        0.65,
-        0.65
+        0.6,
+        0.6,
+        0.6
       ]
     },
     "ground": {
