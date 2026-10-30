@@ -11,7 +11,8 @@
     "client.ClientMoonPhaseMixin",
     "client.RadioMusicManagerMixin",
     "client.ContainerMenuClickClientMixin",
-    "AbstractContainerScreenMixin"
+    "AbstractContainerScreenMixin",
+    "client.BorderVignetteMixin"
   ],
   "injectors": {
     "defaultRequire": 1
