@@ -105,8 +105,19 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private DeleteTarget deleteTarget;       // 当前确认删除的目标（个人 / 公共）
     private Button deleteConfirmButton;      // "确定"按钮引用（ModernHoldButton，按住满进度触发）
 
+    private static boolean openRadioOnNextScreen;
+
+    public static void requestRadioScreen() {
+        openRadioOnNextScreen = true;
+        Platform.openControllerScreen();
+    }
+
     public PersonalDimensionControllerScreen() {
         super(Component.translatable("gui.personaldimension.controller.title"));
+        if (openRadioOnNextScreen) {
+            openRadioOnNextScreen = false;
+            showRadioSettings();
+        }
     }
 
     public void showRadioSettings() {
