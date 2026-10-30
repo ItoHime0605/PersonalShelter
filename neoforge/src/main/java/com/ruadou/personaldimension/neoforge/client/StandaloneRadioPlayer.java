@@ -45,7 +45,7 @@ public final class StandaloneRadioPlayer {
     // Unsupported HLS manifests must not be downloaded on every retry cycle.
     private static volatile String unsupportedUrl = "";
     private static volatile String status = "已停止";
-    private static final long RETRY_DELAY_MS = 10_000L;
+    private static final long RETRY_DELAY_MS = 5_000L;
     public static String status() { return status; }
     /** True only while the active session has started audio output. */
     public static boolean isPlaying() { return active != null && "播放中".equals(status); }
