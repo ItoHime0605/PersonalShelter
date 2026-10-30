@@ -109,6 +109,12 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         super(Component.translatable("gui.personaldimension.controller.title"));
     }
 
+    public void showRadioSettings() {
+        this.activeTab = Tab.SETTINGS;
+        this.settingsPage = SettingsPage.RADIO;
+        ClientLandRadioData.clear();
+    }
+
     public void showSettingsHome() {
         this.activeTab = Tab.SETTINGS;
         this.settingsPage = SettingsPage.HOME;
