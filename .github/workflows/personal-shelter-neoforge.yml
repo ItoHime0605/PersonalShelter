@@ -1,14 +1,8 @@
 name: Personal Shelter NeoForge build
 on:
+  # Keep the legacy build available manually; never launch a second
+  # hosted runner for each commit while private Actions billing is blocked.
   workflow_dispatch:
-  push:
-    paths:
-      - 'common/**'
-      - 'neoforge/**'
-      - 'build.gradle'
-      - 'settings.gradle'
-      - 'gradle.properties'
-      - '.github/workflows/personal-shelter-neoforge.yml'
 jobs:
   neoforge:
     runs-on: ubuntu-latest
