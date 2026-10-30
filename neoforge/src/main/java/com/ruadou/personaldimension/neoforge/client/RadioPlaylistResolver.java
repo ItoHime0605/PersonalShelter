@@ -67,6 +67,11 @@ public final class RadioPlaylistResolver {
      * interrupt the current playlist fetch. Never invoke on the render thread.
      */
     public static String resolve(String address, BooleanSupplier cancelled,
+                                 Consumer<HttpURLConnection> registerConnection) throws IOException {
+        return resolve(address, cancelled, registerConnection, "");
+    }
+
+    public static String resolve(String address, BooleanSupplier cancelled,
                                  Consumer<HttpURLConnection> registerConnection,
                                  String avoidStream) throws IOException {
         return resolveWithMode(address, cancelled, registerConnection, avoidStream, false);
