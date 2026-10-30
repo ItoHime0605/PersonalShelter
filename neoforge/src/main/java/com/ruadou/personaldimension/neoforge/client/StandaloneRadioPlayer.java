@@ -48,7 +48,12 @@ public final class StandaloneRadioPlayer {
     private static final long RETRY_DELAY_MS = 5_000L;
     public static String status() { return status; }
     /** True only while the active session has started audio output. */
-    public static boolean isPlaying() { return active != null && "播放中".equals(status); }
+    public static boolean isPlaying() {
+        Session session = active;
+        if (session == null || session.closed.get() || !"播放中".equals(status)) return false;
+        SourceDataLine line = session.getLine();
+        return line != null && line.isOpen() && line.isRunning();
+    }
     public static String lastFailure() { return lastFailure; }
     private StandaloneRadioPlayer() {}
 
@@ -838,13 +843,17 @@ public final class StandaloneRadioPlayer {
                 connection = null;
                 input = null;
             }
-            // Do potentially blocking cleanup off the client thread.
+            // Disconnect first: a blocked network read should not keep the old
+            // station alive while an audio driver is stopping its PCM line.
+            // All cleanup runs off the client/render thread.
+            if (network != null) {
+                try { network.disconnect(); } catch (Exception ignored) {}
+            }
             if (audio != null) {
                 try { audio.stop(); } catch (Exception ignored) {}
                 try { audio.flush(); } catch (Exception ignored) {}
                 try { audio.close(); } catch (Exception ignored) {}
             }
-            if (network != null) network.disconnect();
             try { if (stream != null) stream.close(); } catch (Exception ignored) {}
         }
     }
