@@ -333,6 +333,12 @@ public final class StandaloneRadioPlayer {
                         // channel counts. Never send their PCM to a stale audio format.
                         if (output == null || !output.getFormat().matches(format)) {
                             if (output != null) {
+                                // Radio stations may splice tracks with different sample
+                                // rates or channel counts. Play the queued tail of the
+                                // previous track before closing its mixer, otherwise
+                                // every format transition audibly cuts off buffered PCM.
+                                finishBufferedAudio(session);
+                                if (session.closed.get()) return;
                                 session.setLine(null);
                                 output.stop();
                                 output.flush();
