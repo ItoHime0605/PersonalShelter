@@ -47,6 +47,8 @@ public final class StandaloneRadioPlayer {
     private static volatile String status = "已停止";
     private static final long RETRY_DELAY_MS = 5_000L;
     private static final long MAX_RETRY_DELAY_MS = 60_000L;
+    // Brief playback must not reset backoff for a repeatedly failing station.
+    private static final long STABLE_PLAYBACK_NANOS = java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
     // Back off repeated failures of the same station instead of hammering an
     // offline broadcaster. A station change or explicit stop resets the count.
     private static int consecutiveFailures;
@@ -419,9 +421,8 @@ public final class StandaloneRadioPlayer {
                     && session.getLine() != null && session.getLine().isRunning()
                     && !"播放中".equals(status)) {
                 status = "播放中";
-                // A successful PCM write proves the stream recovered; future
-                // outages should start with the shortest retry interval again.
-                consecutiveFailures = 0;
+                // Report playback immediately; reset retry backoff only after
+                // ten seconds of actual decoded output (see writePcm).
                 ClientRadioPlaybackStatus.set(status);
             }
         }
@@ -528,6 +529,17 @@ public final class StandaloneRadioPlayer {
                 throw new IOException("電台音訊輸出中斷");
             }
             offset += written;
+            // A station returning a single audio frame must not repeatedly
+            // reset the exponential backoff and hammer its failing endpoint.
+            if (session.firstAudioNanos == 0L) session.firstAudioNanos = System.nanoTime();
+            if (!session.backoffReset && System.nanoTime() - session.firstAudioNanos >= STABLE_PLAYBACK_NANOS) {
+                synchronized (LOCK) {
+                    if (active == session && !session.closed.get()) {
+                        consecutiveFailures = 0;
+                        session.backoffReset = true;
+                    }
+                }
+            }
             // Start only after prebuffering. getBufferSize() reflects the
             // device's real allocation (which may differ from our request).
             // Do not restart a line that was closed by stop/switch.
@@ -849,6 +861,8 @@ public final class StandaloneRadioPlayer {
         final String url;
         final String avoidStreamUrl;
         volatile String resolvedStreamUrl;
+        volatile long firstAudioNanos;
+        volatile boolean backoffReset;
         final AtomicBoolean closed = new AtomicBoolean();
         private final Object resources = new Object();
         private HttpURLConnection connection;
