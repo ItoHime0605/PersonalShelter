@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class RadioMusicManagerMixin {
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void personaldimension$suspendBackgroundMusic(CallbackInfo ci) {
-        if (ClientRadioVolume.get() > 0 && StandaloneRadioPlayer.isPlaying()) {
+        if (ClientRadioVolume.get() > 0 && StandaloneRadioPlayer.isActive()) {
             ci.cancel();
         }
     }
