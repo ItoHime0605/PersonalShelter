@@ -777,12 +777,17 @@ public final class StandaloneRadioPlayer {
                 continue;
             }
             emptyDecodedFrames = 0;
-            if (pcm.getBitsPerSample() != 16 || pcm.getSampleRate() <= 0 || pcm.getChannels() <= 0) {
-                throw new IllegalArgumentException("AAC 音訊格式不支援");
+            // Corrupt AAC headers can produce invalid layouts or enormous PCM
+            // arrays. Validate before allocating buffers or opening a mixer.
+            int channels = pcm.getChannels();
+            int sampleRate = pcm.getSampleRate();
+            if (pcm.getBitsPerSample() != 16 || sampleRate < 8000 || sampleRate > 192000
+                    || (channels != 1 && channels != 2)) {
+                throw new IOException("AAC 音訊取樣率、位元深度或聲道格式不受支援");
             }
-            int frameSize = pcm.getChannels() * 2;
-            if (decoded.length % frameSize != 0) {
-                throw new IllegalArgumentException("AAC 音訊資料未對齊完整影格");
+            int frameSize = channels * 2;
+            if (decoded.length > 1024 * 1024 || decoded.length % frameSize != 0) {
+                throw new IOException("AAC 音訊資料長度無效或影格未對齊");
             }
             if (scaledPcm.length < decoded.length) scaledPcm = new byte[decoded.length];
             AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, pcm.isBigEndian());
@@ -797,10 +802,20 @@ public final class StandaloneRadioPlayer {
                     // A cancelled session exits immediately instead of waiting.
                     finishBufferedAudio(session);
                     if (session.closed.get()) return;
+                    // Keep the old line registered until it is closed. A
+                    // concurrent Stop must still be able to find and silence
+                    // it while HE-AAC/SBR changes the output sample rate.
+                    if (session.closed.get()) return;
+                    try {
+                        output.stop();
+                        output.flush();
+                        output.close();
+                    } catch (IllegalStateException closedDuringSwitch) {
+                        if (!session.closed.get()) throw closedDuringSwitch;
+                        return;
+                    }
+                    if (session.closed.get()) return;
                     session.setLine(null);
-                    output.stop();
-                    output.flush();
-                    output.close();
                 }
                 output = openAudioLine(session, format);
                 if (output == null) return;
