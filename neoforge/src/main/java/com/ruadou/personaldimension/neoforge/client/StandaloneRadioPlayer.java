@@ -616,9 +616,17 @@ public final class StandaloneRadioPlayer {
         // PushbackInputStream alone does not support mark(), so wrap it first.
         try (AudioInputStream encoded = AudioSystem.getAudioInputStream(new BufferedInputStream(input, 65536))) {
             AudioFormat source = encoded.getFormat();
+            // Reject malformed or unsupported channel layouts before creating
+            // a native mixer. Some Ogg providers report an unspecified rate or
+            // channel count, which otherwise produces a misleading device error.
+            float sampleRate = source.getSampleRate();
+            int channels = source.getChannels();
+            if (!Float.isFinite(sampleRate) || sampleRate <= 0
+                    || (channels != 1 && channels != 2)) {
+                throw new IOException("OGG 音訊取樣率或聲道格式不受支援");
+            }
             AudioFormat pcmFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                    source.getSampleRate(), 16, source.getChannels(),
-                    source.getChannels() * 2, source.getSampleRate(), false);
+                    sampleRate, 16, channels, channels * 2, sampleRate, false);
             try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, encoded)) {
                 SourceDataLine output = openAudioLine(session, pcmFormat);
                 if (output == null) return;
@@ -628,16 +636,18 @@ public final class StandaloneRadioPlayer {
                 if (frameSize <= 0) throw new IllegalArgumentException("OGG 音訊影格大小無效");
                 byte[] buffer = new byte[8192 + frameSize];
                 int pending = 0;
-                int consecutiveEmptyReads = 0;
+                long lastDecodedNanos = System.nanoTime();
+                final long maxDecoderIdleNanos = java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
                 while (!session.closed.get()) {
                     int read = pcm.read(buffer, pending, buffer.length - pending);
                     if (read == -1) break;
                     if (read == 0) {
-                        // A decoder can briefly return zero while waiting for a live
-                        // packet. Yielding 32 times can exhaust the limit in a few
-                        // milliseconds; wait up to 2 seconds without busy-spinning.
-                        if (++consecutiveEmptyReads >= 40) {
-                            throw new IOException("OGG 音訊解碼長時間沒有資料");
+                        // Some Ogg Java Sound providers return empty buffers during
+                        // live packet gaps. Count real idle time, not read attempts:
+                        // an otherwise healthy station may pause for several seconds.
+                        // The HTTP socket already has its own read timeout.
+                        if (System.nanoTime() - lastDecodedNanos >= maxDecoderIdleNanos) {
+                            throw new IOException("OGG 音訊解碼超過 10 秒沒有資料");
                         }
                         try {
                             Thread.sleep(50L);
@@ -647,7 +657,7 @@ public final class StandaloneRadioPlayer {
                         }
                         continue;
                     }
-                    consecutiveEmptyReads = 0;
+                    lastDecodedNanos = System.nanoTime();
                     int total = pending + read;
                     int aligned = total - total % frameSize;
                     int remainder = total - aligned;
