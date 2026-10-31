@@ -341,8 +341,23 @@ public final class StandaloneRadioPlayer {
                             continue;
                         }
                         if (session.closed.get()) break;
-                        AudioFormat format = new AudioFormat(pcm.getSampleFrequency(), 16,
-                                pcm.getChannelCount(), true, false);
+                        // A corrupt MP3 frame can report an invalid rate, channel
+                        // layout or sample count. Validate the decoder output
+                        // before opening a native mixer or allocating PCM memory.
+                        int sampleRate = pcm.getSampleFrequency();
+                        int channels = pcm.getChannelCount();
+                        short[] samples = pcm.getBuffer();
+                        int length = pcm.getBufferLength();
+                        if (sampleRate < 8000 || sampleRate > 192000
+                                || (channels != 1 && channels != 2)
+                                || samples == null || length < 0
+                                || length > samples.length || length > 32768) {
+                            if (++consecutiveDecodeFailures >= 5)
+                                throw new IOException("MP3 音訊格式或解碼資料持續無效");
+                            continue;
+                        }
+                        AudioFormat format = new AudioFormat(sampleRate, 16,
+                                channels, true, false);
                         SourceDataLine output = session.getLine();
                         // Some radio streams splice tracks with different sample rates or
                         // channel counts. Never send their PCM to a stale audio format.
@@ -373,8 +388,6 @@ public final class StandaloneRadioPlayer {
                             output = openAudioLine(session, format);
                             if (output == null) return;
                         }
-                        short[] samples = pcm.getBuffer();
-                        int length = pcm.getBufferLength();
                         if (length == 0) {
                             // Reject a damaged stream that decodes headers but never PCM.
                             if (++emptyDecodedFrames >= 128)
