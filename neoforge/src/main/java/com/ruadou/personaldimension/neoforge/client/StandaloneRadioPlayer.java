@@ -366,7 +366,23 @@ public final class StandaloneRadioPlayer {
                                 throw new IOException("MP3 音訊格式或解碼資料持續無效");
                             continue;
                         }
+                        // Empty frames must not open/reconfigure the native mixer.
+                        // Some damaged live streams report valid headers but
+                        // never yield audio; treat these as bounded failures.
+                        if (length == 0) {
+                            if (++emptyDecodedFrames >= 128)
+                                throw new IOException("MP3 音訊持續沒有可播放的資料");
+                            continue;
+                        }
+                        // Interleaved PCM must contain complete mono/stereo
+                        // sample frames; otherwise the output write is invalid.
+                        if (length % channels != 0) {
+                            if (++consecutiveDecodeFailures >= 5)
+                                throw new IOException("MP3 音訊資料未對齊完整影格");
+                            continue;
+                        }
                         consecutiveDecodeFailures = 0;
+                        emptyDecodedFrames = 0;
                         AudioFormat format = new AudioFormat(sampleRate, 16,
                                 channels, true, false);
                         SourceDataLine output = session.getLine();
@@ -399,13 +415,6 @@ public final class StandaloneRadioPlayer {
                             output = openAudioLine(session, format);
                             if (output == null) return;
                         }
-                        if (length == 0) {
-                            // Reject a damaged stream that decodes headers but never PCM.
-                            if (++emptyDecodedFrames >= 128)
-                                throw new IOException("MP3 音訊持續沒有可播放的資料");
-                            continue;
-                        }
-                        emptyDecodedFrames = 0;
                         int byteLength = Math.multiplyExact(length, 2);
                         if (bytes.length < byteLength) bytes = new byte[byteLength];
                         RadioPcm.fromShorts(samples, length, bytes, ClientRadioVolume.get());
