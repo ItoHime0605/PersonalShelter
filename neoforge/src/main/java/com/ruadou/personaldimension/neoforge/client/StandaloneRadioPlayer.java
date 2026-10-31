@@ -112,8 +112,12 @@ public final class StandaloneRadioPlayer {
                 }
                 return;
             }
+            // Keep the previous device until its asynchronous cleanup completes.
+            // The new worker waits off the render thread, preventing overlapping
+            // stations and mixers when a player switches channels quickly.
+            Session previous = active;
             stopLocked();
-            Session session = new Session(url, url.equals(failedUrl) ? failedStreamUrl : "");
+            Session session = new Session(url, url.equals(failedUrl) ? failedStreamUrl : "", previous);
             active = session;
             currentUrl = url;
             status = "正在連線";
@@ -150,6 +154,11 @@ public final class StandaloneRadioPlayer {
 
     private static void play(Session session) {
         try {
+            // A cancelled station may still own the native audio device while
+            // its cleanup worker disconnects a blocked network stream.
+            // Never start a replacement stream until that cleanup has finished.
+            session.awaitPreviousRelease();
+            if (session.closed.get()) return;
             String url = RadioPlaylistResolver.resolve(session.url, session.closed::get,
                     connection -> session.setConnection(connection), session.avoidStreamUrl);
             session.resolvedStreamUrl = url;
@@ -871,6 +880,8 @@ public final class StandaloneRadioPlayer {
     private static final class Session {
         final String url;
         final String avoidStreamUrl;
+        final Session previous;
+        final java.util.concurrent.CountDownLatch releaseComplete = new java.util.concurrent.CountDownLatch(1);
         volatile String resolvedStreamUrl;
         double acceptedAudioSeconds;
         volatile boolean backoffReset;
@@ -881,9 +892,24 @@ public final class StandaloneRadioPlayer {
         private SourceDataLine line;
         private final AtomicBoolean released = new AtomicBoolean();
 
-        Session(String url, String avoidStreamUrl) {
+        Session(String url, String avoidStreamUrl, Session previous) {
             this.url = url;
             this.avoidStreamUrl = avoidStreamUrl;
+            this.previous = previous;
+        }
+
+        void awaitPreviousRelease() throws IOException {
+            if (previous == null) return;
+            try {
+                // A hung driver must not stall this worker indefinitely.
+                // Fail safely and retry rather than overlap two radio outputs.
+                if (!previous.releaseComplete.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    throw new IOException("前一個電台尚未完成音效裝置釋放");
+                }
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IOException("切換電台時播放程序遭到中斷", interrupted);
+            }
         }
 
         // A stop can happen between openConnection()/AudioSystem.getLine()
@@ -949,18 +975,21 @@ public final class StandaloneRadioPlayer {
                 connection = null;
                 input = null;
             }
-            // Disconnect first: a blocked network read should not keep the old
-            // station alive while an audio driver is stopping its PCM line.
-            // All cleanup runs off the client/render thread.
-            if (network != null) {
-                try { network.disconnect(); } catch (Exception ignored) {}
+            // Always signal completion, even if a device or stream throws during
+            // cleanup. New stations only proceed after this native line is closed.
+            try {
+                if (network != null) {
+                    try { network.disconnect(); } catch (Exception ignored) {}
+                }
+                if (audio != null) {
+                    try { audio.stop(); } catch (Exception ignored) {}
+                    try { audio.flush(); } catch (Exception ignored) {}
+                    try { audio.close(); } catch (Exception ignored) {}
+                }
+                try { if (stream != null) stream.close(); } catch (Exception ignored) {}
+            } finally {
+                releaseComplete.countDown();
             }
-            if (audio != null) {
-                try { audio.stop(); } catch (Exception ignored) {}
-                try { audio.flush(); } catch (Exception ignored) {}
-                try { audio.close(); } catch (Exception ignored) {}
-            }
-            try { if (stream != null) stream.close(); } catch (Exception ignored) {}
         }
     }
 }
