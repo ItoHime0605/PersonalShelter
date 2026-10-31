@@ -655,7 +655,7 @@ public final class StandaloneRadioPlayer {
             // channel count, which otherwise produces a misleading device error.
             float sampleRate = source.getSampleRate();
             int channels = source.getChannels();
-            if (!Float.isFinite(sampleRate) || sampleRate <= 0
+            if (!Float.isFinite(sampleRate) || sampleRate < 8000 || sampleRate > 192000
                     || (channels != 1 && channels != 2)) {
                 throw new IOException("OGG 音訊取樣率或聲道格式不受支援");
             }
@@ -766,7 +766,6 @@ public final class StandaloneRadioPlayer {
             if (frame == null || session.closed.get()) break;
             try {
                 decoder.decodeFrame(frame, pcm);
-                consecutiveDecodeFailures = 0;
             } catch (net.sourceforge.jaad.aac.AACException badFrame) {
                 // Isolated AAC transport damage is common on live streams.
                 // Reconnect if decoding remains broken for five frames.
@@ -785,7 +784,6 @@ public final class StandaloneRadioPlayer {
                 }
                 continue;
             }
-            emptyDecodedFrames = 0;
             // Corrupt AAC headers can produce invalid layouts or enormous PCM
             // arrays. Validate before allocating buffers or opening a mixer.
             int channels = pcm.getChannels();
@@ -798,6 +796,10 @@ public final class StandaloneRadioPlayer {
             if (decoded.length > 1024 * 1024 || decoded.length % frameSize != 0) {
                 throw new IOException("AAC 音訊資料長度無效或影格未對齊");
             }
+            // A successful decode is not necessarily playable PCM. Only
+            // reset failure counters after the output passes every check.
+            consecutiveDecodeFailures = 0;
+            emptyDecodedFrames = 0;
             if (scaledPcm.length < decoded.length) scaledPcm = new byte[decoded.length];
             AudioFormat format = new AudioFormat(pcm.getSampleRate(), 16, pcm.getChannels(), true, pcm.isBigEndian());
             SourceDataLine output = session.getLine();
