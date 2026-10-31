@@ -63,6 +63,16 @@ public final class StandaloneRadioPlayer {
         return delay;
     }
     public static String status() { return status; }
+    /**
+     * True while a station is connecting, buffering or playing. Vanilla
+     * background music must not start during prebuffering: it would otherwise
+     * overlap the radio until the first PCM chunk reaches the mixer.
+     * A failed station releases active, so music can resume during retry.
+     */
+    public static boolean isActive() {
+        Session session = active;
+        return session != null && !session.closed.get();
+    }
     /** True only while the active session has started audio output. */
     public static boolean isPlaying() {
         Session session = active;
