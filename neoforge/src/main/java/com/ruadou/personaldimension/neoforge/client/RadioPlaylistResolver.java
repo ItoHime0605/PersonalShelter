@@ -255,6 +255,11 @@ public final class RadioPlaylistResolver {
         try {
             for (int redirects = 0; redirects <= 3; redirects++) {
                 checkCancelled(cancelled);
+                // Validate each hop before opening its socket, not just the
+                // original station URL. Never follow a playlist redirect into
+                // a loopback, private-network or non-HTTP destination.
+                uri = RadioUrlSecurity.requirePublicHttpUrl(uri.toString());
+                checkCancelled(cancelled);
                 connection = (HttpURLConnection) uri.toURL().openConnection();
                 registerConnection.accept(connection);
                 checkCancelled(cancelled);
@@ -262,6 +267,7 @@ public final class RadioPlaylistResolver {
                 connection.setReadTimeout(TIMEOUT_MS);
                 connection.setInstanceFollowRedirects(false);
                 connection.setRequestProperty("User-Agent", "PersonalShelter/Radio");
+                connection.setRequestProperty("Icy-MetaData", "0");
                 int status = connection.getResponseCode();
                 checkCancelled(cancelled);
                 if (status == 301 || status == 302 || status == 303
