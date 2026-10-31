@@ -331,7 +331,7 @@ public final class StandaloneRadioPlayer {
                         SampleBuffer pcm;
                         try {
                             pcm = (SampleBuffer) decoder.decodeFrame(header, stream);
-                            consecutiveDecodeFailures = 0;
+                            // Reset only after the decoded PCM passes validation.
                         } catch (javazoom.jl.decoder.DecoderException badFrame) {
                             // A single corrupt MP3 frame must not kill a live radio session.
                             // Give up after repeated failures instead of looping forever.
@@ -356,6 +356,7 @@ public final class StandaloneRadioPlayer {
                                 throw new IOException("MP3 音訊格式或解碼資料持續無效");
                             continue;
                         }
+                        consecutiveDecodeFailures = 0;
                         AudioFormat format = new AudioFormat(sampleRate, 16,
                                 channels, true, false);
                         SourceDataLine output = session.getLine();
