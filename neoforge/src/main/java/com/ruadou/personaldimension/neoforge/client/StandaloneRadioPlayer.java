@@ -720,6 +720,12 @@ public final class StandaloneRadioPlayer {
             // device rather than sending differently formatted PCM into an old line.
             if (output == null || !output.getFormat().matches(format)) {
                 if (output != null) {
+                    // HE-AAC/SBR can change the decoded sample rate after the
+                    // initial frames. Drain the queued audio using the old
+                    // format before replacing the mixer, as for MP3 streams.
+                    // A cancelled session exits immediately instead of waiting.
+                    finishBufferedAudio(session);
+                    if (session.closed.get()) return;
                     session.setLine(null);
                     output.stop();
                     output.flush();
