@@ -46,6 +46,17 @@ public final class StandaloneRadioPlayer {
     private static volatile String unsupportedUrl = "";
     private static volatile String status = "已停止";
     private static final long RETRY_DELAY_MS = 5_000L;
+    private static final long MAX_RETRY_DELAY_MS = 60_000L;
+    // Back off repeated failures of the same station instead of hammering an
+    // offline broadcaster. A station change or explicit stop resets the count.
+    private static int consecutiveFailures;
+    private static long retryDelayFor(int failures) {
+        long delay = RETRY_DELAY_MS;
+        for (int i = 1; i < failures && delay < MAX_RETRY_DELAY_MS; i++) {
+            delay = Math.min(MAX_RETRY_DELAY_MS, delay * 2);
+        }
+        return delay;
+    }
     public static String status() { return status; }
     /** True only while the active session has started audio output. */
     public static boolean isPlaying() {
@@ -69,6 +80,7 @@ public final class StandaloneRadioPlayer {
                 failedUrl = "";
                 failedStreamUrl = "";
                 retryAfter = 0;
+                consecutiveFailures = 0;
                 return;
             }
             if (active != null && url.equals(currentUrl)) return;
@@ -88,6 +100,7 @@ public final class StandaloneRadioPlayer {
                 failedUrl = "";
                 failedStreamUrl = "";
                 lastFailure = "";
+                consecutiveFailures = 0;
             }
             if (url.equals(failedUrl) && System.currentTimeMillis() < retryAfter) {
                 String waiting = "等待重試（" + Math.max(1L, (retryAfter - System.currentTimeMillis() + 999L) / 1000L) + " 秒）";
@@ -118,6 +131,7 @@ public final class StandaloneRadioPlayer {
             failedUrl = "";
             failedStreamUrl = "";
             retryAfter = 0;
+            consecutiveFailures = 0;
         }
     }
 
@@ -374,7 +388,9 @@ public final class StandaloneRadioPlayer {
                     currentUrl = "";
                     failedUrl = session.url;
                     failedStreamUrl = session.resolvedStreamUrl == null ? "" : session.resolvedStreamUrl;
-                    retryAfter = System.currentTimeMillis() + RETRY_DELAY_MS;
+                    if (!interrupted) consecutiveFailures = Math.min(16, consecutiveFailures + 1);
+                    retryAfter = System.currentTimeMillis()
+                            + retryDelayFor(Math.max(1, consecutiveFailures));
                     if (!interrupted && !status.startsWith("播放失敗")) {
                         status = "連線中斷，稍後重試";
                         ClientRadioPlaybackStatus.set(status);
@@ -395,6 +411,9 @@ public final class StandaloneRadioPlayer {
                     && session.getLine() != null && session.getLine().isRunning()
                     && !"播放中".equals(status)) {
                 status = "播放中";
+                // A successful PCM write proves the stream recovered; future
+                // outages should start with the shortest retry interval again.
+                consecutiveFailures = 0;
                 ClientRadioPlaybackStatus.set(status);
             }
         }
