@@ -493,6 +493,14 @@ public final class StandaloneRadioPlayer {
     private static SourceDataLine openAudioLine(Session session, AudioFormat format) throws Exception {
         SourceDataLine output = (SourceDataLine) AudioSystem.getLine(
                 new DataLine.Info(SourceDataLine.class, format));
+        // Publish the mixer before calling open(): a driver can block inside
+        // open() while Stop runs on the client thread. The cleanup worker must
+        // already know which native line to close, even during initialization.
+        session.setLine(output);
+        if (session.closed.get()) {
+            output.close();
+            return null;
+        }
         try {
             // Prefer a larger device buffer to absorb network/decoder jitter,
             // but some sound drivers reject large line allocations. Fall back
@@ -530,7 +538,8 @@ public final class StandaloneRadioPlayer {
                 throw new javax.sound.sampled.LineUnavailableException(
                         "音效裝置無法配置播放緩衝區：" + lastOpenFailure);
             }
-            session.setLine(output);
+            // Stop may have arrived while the driver was opening the line.
+            // Never return an output that belongs to a cancelled session.
             if (session.closed.get()) {
                 output.close();
                 return null;
