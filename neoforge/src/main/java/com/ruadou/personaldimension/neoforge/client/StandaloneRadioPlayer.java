@@ -48,7 +48,7 @@ public final class StandaloneRadioPlayer {
     private static final long RETRY_DELAY_MS = 5_000L;
     private static final long MAX_RETRY_DELAY_MS = 60_000L;
     // Brief playback must not reset backoff for a repeatedly failing station.
-    private static final long STABLE_PLAYBACK_NANOS = java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+    private static final long STABLE_PLAYBACK_MILLIS = 10_000L;
     // Back off repeated failures of the same station instead of hammering an
     // offline broadcaster. A station change or explicit stop resets the count.
     private static int consecutiveFailures;
@@ -531,12 +531,23 @@ public final class StandaloneRadioPlayer {
             offset += written;
             // A station returning a single audio frame must not repeatedly
             // reset the exponential backoff and hammer its failing endpoint.
-            if (session.firstAudioNanos == 0L) session.firstAudioNanos = System.nanoTime();
-            if (!session.backoffReset && System.nanoTime() - session.firstAudioNanos >= STABLE_PLAYBACK_NANOS) {
-                synchronized (LOCK) {
-                    if (active == session && !session.closed.get()) {
-                        consecutiveFailures = 0;
-                        session.backoffReset = true;
+            // A slow or stalled decoder can remain connected for ten seconds
+            // while producing almost no sound. Count actual accepted PCM frames
+            // rather than wall-clock connection time before forgiving failures.
+            // The output mixer applies backpressure, so accepted frames track
+            // playable audio even for stations that send data in bursts.
+            if (!session.backoffReset) {
+                AudioFormat actualFormat = output.getFormat();
+                double framesPerSecond = actualFormat.getFrameRate();
+                if (framesPerSecond > 0 && Double.isFinite(framesPerSecond)) {
+                    session.acceptedAudioSeconds += (written / (double) frameSize) / framesPerSecond;
+                    if (session.acceptedAudioSeconds * 1000.0 >= STABLE_PLAYBACK_MILLIS) {
+                        synchronized (LOCK) {
+                            if (active == session && !session.closed.get()) {
+                                consecutiveFailures = 0;
+                                session.backoffReset = true;
+                            }
+                        }
                     }
                 }
             }
@@ -861,7 +872,7 @@ public final class StandaloneRadioPlayer {
         final String url;
         final String avoidStreamUrl;
         volatile String resolvedStreamUrl;
-        volatile long firstAudioNanos;
+        double acceptedAudioSeconds;
         volatile boolean backoffReset;
         final AtomicBoolean closed = new AtomicBoolean();
         private final Object resources = new Object();
