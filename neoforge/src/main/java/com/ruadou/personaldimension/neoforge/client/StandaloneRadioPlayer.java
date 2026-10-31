@@ -354,10 +354,21 @@ public final class StandaloneRadioPlayer {
                                 // every format transition audibly cuts off buffered PCM.
                                 finishBufferedAudio(session);
                                 if (session.closed.get()) return;
+                                // Keep the previous mixer registered until it is
+                                // actually closed. Otherwise Stop can race with
+                                // this format transition, lose the only reference
+                                // to the old native line, and allow overlap.
+                                if (session.closed.get()) return;
+                                try {
+                                    output.stop();
+                                    output.flush();
+                                    output.close();
+                                } catch (IllegalStateException closedDuringSwitch) {
+                                    if (!session.closed.get()) throw closedDuringSwitch;
+                                    return;
+                                }
+                                if (session.closed.get()) return;
                                 session.setLine(null);
-                                output.stop();
-                                output.flush();
-                                output.close();
                             }
                             output = openAudioLine(session, format);
                             if (output == null) return;
