@@ -36,6 +36,9 @@ import java.util.Objects;
 public final class StandaloneRadioPlayer {
     private static final Object LOCK = new Object();
     private static volatile Session active;
+    // Retain the last session even after stop(): a rapid stop/start must wait
+    // for its asynchronous native mixer cleanup just like a station switch.
+    private static Session lastSession;
     private static volatile String currentUrl = "";
     private static volatile long retryAfter;
     private static volatile String failedUrl = "";
@@ -115,9 +118,10 @@ public final class StandaloneRadioPlayer {
             // Keep the previous device until its asynchronous cleanup completes.
             // The new worker waits off the render thread, preventing overlapping
             // stations and mixers when a player switches channels quickly.
-            Session previous = active;
+            Session previous = lastSession;
             stopLocked();
             Session session = new Session(url, url.equals(failedUrl) ? failedStreamUrl : "", previous);
+            lastSession = session;
             active = session;
             currentUrl = url;
             status = "正在連線";
@@ -880,7 +884,7 @@ public final class StandaloneRadioPlayer {
     private static final class Session {
         final String url;
         final String avoidStreamUrl;
-        final Session previous;
+        Session previous;
         final java.util.concurrent.CountDownLatch releaseComplete = new java.util.concurrent.CountDownLatch(1);
         volatile String resolvedStreamUrl;
         double acceptedAudioSeconds;
@@ -899,17 +903,27 @@ public final class StandaloneRadioPlayer {
         }
 
         void awaitPreviousRelease() throws IOException {
-            if (previous == null) return;
-            try {
-                // A hung driver must not stall this worker indefinitely.
-                // Fail safely and retry rather than overlap two radio outputs.
-                if (!previous.releaseComplete.await(5, java.util.concurrent.TimeUnit.SECONDS)) {
-                    throw new IOException("前一個電台尚未完成音效裝置釋放");
+            // Fast A -> B -> C switching can cancel B before B has waited for A.
+            // Waiting only for B's own cleanup would then let C overlap A.
+            // Walk the entire outstanding handoff chain before opening a mixer.
+            Session cursor = previous;
+            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+            while (cursor != null) {
+                try {
+                    long remaining = deadline - System.nanoTime();
+                    if (remaining <= 0 || !cursor.releaseComplete.await(
+                            remaining, java.util.concurrent.TimeUnit.NANOSECONDS)) {
+                        throw new IOException("前一個電台尚未完成音效裝置釋放");
+                    }
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("切換電台時播放程序遭到中斷", interrupted);
                 }
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                throw new IOException("切換電台時播放程序遭到中斷", interrupted);
+                cursor = cursor.previous;
             }
+            // Release old sessions for garbage collection once the full chain
+            // has been verified; no prior mixer remains in use.
+            previous = null;
         }
 
         // A stop can happen between openConnection()/AudioSystem.getLine()
