@@ -360,6 +360,8 @@ public final class StandaloneRadioPlayer {
                     }
                 }
             }
+            // Allow the final PCM samples to reach the mixer before EOF cleanup.
+            finishBufferedAudio(session);
             // The MP3 stream reached EOF; reconnect through the normal policy.
             break;
             }
@@ -531,6 +533,31 @@ public final class StandaloneRadioPlayer {
         }
     }
 
+    /**
+     * Finish a finite stream without dropping its last buffered samples.
+     * A short clip may never reach the normal half-buffer startup threshold.
+     * Bound the wait so broken audio drivers cannot hang a radio worker.
+     */
+    private static void finishBufferedAudio(Session session) {
+        SourceDataLine output = session.getLine();
+        if (output == null || session.closed.get() || !output.isOpen()) return;
+        try {
+            if (!output.isRunning()) output.start();
+            if (session.closed.get()) return;
+            markPlaying(session);
+            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+            while (!session.closed.get() && output.isOpen()
+                    && output.getBufferSize() - output.available() > 0
+                    && System.nanoTime() < deadline) {
+                Thread.sleep(20L);
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        } catch (RuntimeException ignored) {
+            // A device may be closed concurrently by stop/switch.
+        }
+    }
+
     private static void playOgg(Session session, InputStream input) throws Exception {
         // Java Sound SPI readers require mark/reset during format probing.
         // PushbackInputStream alone does not support mark(), so wrap it first.
@@ -580,6 +607,9 @@ public final class StandaloneRadioPlayer {
                     if (remainder > 0) System.arraycopy(buffer, aligned, buffer, 0, remainder);
                     pending = remainder;
                 }
+                if (pending != 0 && !session.closed.get())
+                    throw new IOException("OGG 音訊結尾包含不完整的 PCM 影格");
+                finishBufferedAudio(session);
             }
         }
     }
@@ -687,6 +717,7 @@ public final class StandaloneRadioPlayer {
             writePcm(session, output, scaledPcm, decoded.length, frameSize);
             markPlaying(session);
         }
+        finishBufferedAudio(session);
     }
 
     /**
