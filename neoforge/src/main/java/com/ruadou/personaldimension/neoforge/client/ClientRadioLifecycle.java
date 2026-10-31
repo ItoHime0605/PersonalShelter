@@ -31,7 +31,7 @@ public final class ClientRadioLifecycle {
         // RadioMusicManagerMixin prevents new background tracks from being
         // scheduled during playback, without muting other sound categories.
         boolean radioPlaying = inWorld && ClientRadioVolume.get() > 0
-                && StandaloneRadioPlayer.isPlaying();
+                && StandaloneRadioPlayer.isActive();
         if (radioPlaying && !wasRadioPlaying) {
             mc.getMusicManager().stopPlaying();
         }
