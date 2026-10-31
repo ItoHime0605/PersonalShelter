@@ -545,7 +545,18 @@ public final class StandaloneRadioPlayer {
             if (!output.isRunning()) output.start();
             if (session.closed.get()) return;
             markPlaying(session);
-            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+            // Allow enough time for the actual queued PCM duration, not a fixed
+            // three seconds: a large device buffer can hold more than 3 s of audio.
+            // Never call SourceDataLine.drain(): some drivers block indefinitely.
+            int queuedBytes = Math.max(0, output.getBufferSize() - output.available());
+            javax.sound.sampled.AudioFormat format = output.getFormat();
+            double bytesPerSecond = format.getFrameRate() * format.getFrameSize();
+            long expectedMillis = bytesPerSecond > 0 && Double.isFinite(bytesPerSecond)
+                    ? (long) Math.ceil(queuedBytes * 1000.0 / bytesPerSecond)
+                    : 3000L;
+            long timeoutMillis = Math.min(30000L, Math.max(3000L, expectedMillis + 1500L));
+            long deadline = System.nanoTime()
+                    + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
             while (!session.closed.get() && output.isOpen()
                     && output.getBufferSize() - output.available() > 0
                     && System.nanoTime() < deadline) {
