@@ -1002,13 +1002,17 @@ public final class StandaloneRadioPlayer {
             // Always signal completion, even if a device or stream throws during
             // cleanup. New stations only proceed after this native line is closed.
             try {
-                if (network != null) {
-                    try { network.disconnect(); } catch (Exception ignored) {}
-                }
+                // Silence the old station before waiting on a network socket.
+                // HttpURLConnection.disconnect() can block on some radio
+                // servers; doing it first previously left buffered audio
+                // audible after the player pressed Stop or changed stations.
                 if (audio != null) {
                     try { audio.stop(); } catch (Exception ignored) {}
                     try { audio.flush(); } catch (Exception ignored) {}
                     try { audio.close(); } catch (Exception ignored) {}
+                }
+                if (network != null) {
+                    try { network.disconnect(); } catch (Exception ignored) {}
                 }
                 try { if (stream != null) stream.close(); } catch (Exception ignored) {}
             } finally {
