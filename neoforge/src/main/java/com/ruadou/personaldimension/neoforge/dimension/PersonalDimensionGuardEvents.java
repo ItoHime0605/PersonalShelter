@@ -28,6 +28,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
+import net.minecraft.world.phys.EntityHitResult;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -114,6 +118,37 @@ public final class PersonalDimensionGuardEvents {
             return;
         }
         GuardService.markPendingRedirect(sp.getUUID());
+    }
+
+    /**
+     * Recheck permission when a flying Catch'Em All ball hits a mob.
+     * The ball can outlive its thrower's dimension or a permission change.
+     * Never remove a ball that already contains a target in its capture animation.
+     */
+    @SubscribeEvent
+    public static void onCatchEmAllImpact(ProjectileImpactEvent event) {
+        if (!(event.getProjectile() instanceof ThrowableItemProjectile ball)
+            || ball.level().isClientSide()
+            || !(event.getRayTraceResult() instanceof EntityHitResult hit)
+            || !"catchemall:thrown_poke_ball".equals(BuiltInRegistries.ENTITY_TYPE.getKey(ball.getType()).toString())
+            || ModDimensions.ownerOf(hit.getEntity().level().dimension()).isEmpty()) return;
+        if (ball.getOwner() instanceof ServerPlayer sp
+            && !GuardService.denyInDimension(sp, hit.getEntity().level().dimension(), Permission.CAPTURE_MOB)) return;
+
+        // Catch'Em All is optional: no hard linkage against third-party classes.
+        try {
+            Object state = ball.getClass().getMethod("getCaptureState").invoke(ball);
+            if (!(state instanceof Enum<?> phase) || !"NOT".equals(phase.name())) return;
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            event.setCanceled(true);
+            return;
+        }
+        event.setCanceled(true);
+        // Match Catch'Em All's failed-throw behavior: drop the original empty ball, unless creative.
+        if (!(ball.getOwner() instanceof ServerPlayer sp) || !sp.isCreative()) {
+            ball.spawnAtLocation(ball.getItem().copyWithCount(1));
+        }
+        ball.discard();
     }
 
     /**

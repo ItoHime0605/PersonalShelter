@@ -12,6 +12,10 @@ import com.ruadou.personaldimension.platform.Platform;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.tags.BlockTags;
@@ -140,10 +144,11 @@ public final class GuardService {
     }
 
     public static boolean deny(Player player, Permission perm) {
-        if (!(player instanceof ServerPlayer sp)) {
-            return false;
-        }
-        ResourceKey<Level> dim = sp.level().dimension();
+        if (!(player instanceof ServerPlayer sp)) return false;
+        return denyInDimension(sp, sp.level().dimension(), perm);
+    }
+
+    public static boolean denyInDimension(ServerPlayer sp, ResourceKey<Level> dim, Permission perm) {
         if (Platform.isPublicDimension(dim)) {
             return false;
         }
@@ -199,7 +204,37 @@ public final class GuardService {
         return Permission.INTERACT_BLOCK;
     }
 
+    private static boolean isCatchEmAllBall(ItemStack stack) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (!"catchemall".equals(id.getNamespace())) return false;
+        return switch (id.getPath()) {
+            case "poke_ball", "great_ball", "ultra_ball", "master_ball" -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * Catch'Em All stores empty, filled and deployed balls under the same item IDs.
+     * Mirror PokeBallItem.isFilledBall/getStoredEntityUUID from the supplied 1.0.4 jar.
+     * A deployed pet can be recalled without release permission; the mod itself verifies ownership.
+     */
+    private static Permission catchEmAllAction(ItemStack stack) {
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains("CapturedEntity")) return Permission.CAPTURE_MOB;
+        String entityId = tag.getString("EntityUUID");
+        if (!entityId.isEmpty()) {
+            try {
+                UUID.fromString(entityId);
+                return null; // recall only, not a new capture or release
+            } catch (IllegalArgumentException ignored) {
+                // Invalid UUID follows Catch'Em All's ordinary release branch.
+            }
+        }
+        return Permission.RELEASE_MOB;
+    }
+
     public static Permission useItemPerm(ItemStack stack) {
+        if (isCatchEmAllBall(stack)) return catchEmAllAction(stack);
         Item item = stack.getItem();
         if (stack.is(RELEASE_ITEMS)) return Permission.RELEASE_MOB;
         if (item instanceof BucketItem) {
