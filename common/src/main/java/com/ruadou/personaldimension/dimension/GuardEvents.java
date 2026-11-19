@@ -68,7 +68,7 @@ public final class GuardEvents {
         });
 
         BlockEvent.BREAK.register((level, pos, state, player, xp) -> {
-            if (GuardService.deny(player, Permission.BREAK)) {
+            if (GuardService.deny(player, GuardService.breakPerm(state))) {
                 GuardService.resyncInventory(player);
                 return EventResult.interruptFalse();
             }
@@ -105,7 +105,7 @@ public final class GuardEvents {
                     return EventResult.interruptFalse();
                 }
             }
-            if (GuardService.deny(player, Permission.PLACE)) {
+            if (GuardService.deny(player, GuardService.placePerm(state))) {
                 GuardService.resyncInventory(player);
                 return EventResult.interruptFalse();
             }
@@ -117,8 +117,8 @@ public final class GuardEvents {
                 return EventResult.pass();
             }
             ItemStack stack = player.getItemInHand(hand);
-            Permission perm = GuardService.blockInteractPerm(stack.getItem(), player.level(), pos);
-            if (GuardService.deny(player, perm)) {
+            Permission perm = GuardService.blockInteractPerm(stack, player.level(), pos);
+            if (GuardService.denyBed(player, player.level(), pos) || GuardService.deny(player, perm)) {
                 GuardService.resyncInventory(player);
                 return EventResult.interruptFalse();
             }
@@ -129,7 +129,7 @@ public final class GuardEvents {
             if (player.level().isClientSide) {
                 return EventResult.pass();
             }
-            if (GuardService.deny(player, Permission.INTERACT_ENTITY)) {
+            if (GuardService.deny(player, GuardService.entityInteractPerm(player, entity, hand))) {
                 GuardService.resyncInventory(player);
                 return EventResult.interruptFalse();
             }
@@ -141,7 +141,7 @@ public final class GuardEvents {
                 return CompoundEventResult.pass();
             }
             ItemStack stack = player.getItemInHand(hand);
-            Permission perm = GuardService.useItemPerm(stack.getItem());
+            Permission perm = GuardService.useItemPerm(stack);
             if (perm != null && GuardService.deny(player, perm)) {
                 GuardService.resyncInventory(player);
                 return CompoundEventResult.interruptFalse(stack);

@@ -141,6 +141,12 @@ class TeleportTabPanel {
         screen.add(doneBtn);
 
         TeleporterEntry entry = ClientTeleporterData.teleporters().get(this.highlightIndex);
+        if (entry.name().startsWith("[Shared] ")) {
+            this.nameInput.setEditable(false);
+            this.noteInput.setEditable(false);
+            resetBtn.active = false;
+            saveBtn.active = false;
+        }
         this.nameInput.setValue(entry.name());
         this.noteInput.setValue(entry.note());
     }

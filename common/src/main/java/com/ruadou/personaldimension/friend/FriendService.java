@@ -150,7 +150,7 @@ public final class FriendService {
     public static void setGroupPermission(MinecraftServer server, UUID owner,
                                           String groupName, Permission permission, boolean enabled) {
         PermissionGroup group = editable(server, owner).group(groupName);
-        if (group != null) {
+        if (group != null && !OwnerFriendConfig.DEFAULT_GROUP_NAME.equals(groupName)) {
             group.set(permission, enabled);
             markDirty(server);
         }

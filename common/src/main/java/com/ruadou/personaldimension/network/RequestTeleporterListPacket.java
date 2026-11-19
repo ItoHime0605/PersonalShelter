@@ -25,7 +25,7 @@ public record RequestTeleporterListPacket() implements CustomPacketPayload {
         StreamCodec.unit(new RequestTeleporterListPacket());
 
     public void handle(ServerPlayer player) {
-        var list = TeleporterService.getList(player.getServer(), player.getUUID());
+        var list = TeleporterService.accessibleList(player);
         Platform.sendToPlayer(player, new TeleporterListPacket(list));
     }
 

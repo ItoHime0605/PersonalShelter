@@ -47,6 +47,11 @@ public abstract class ContainerMenuClickMixin {
     @Inject(method = "clicked", at = @At("HEAD"), cancellable = true)
     private void personaldimension$clicked(int slotNum, int buttonNum, ClickType clickType, Player player, CallbackInfo ci) {
         if (player.level().isClientSide()) return; // 客户端由 client mixin 处理
+        if (GuardService.denyContainerClick(player, (AbstractContainerMenu)(Object)this, slotNum, buttonNum, clickType)) {
+            GuardService.resyncInventory(player);
+            ci.cancel();
+            return;
+        }
         if (!personaldimension$serverIsDropAction(slotNum, clickType)) return;
 
         if (GuardService.deny(player, Permission.DROP_ITEM)) {

@@ -39,7 +39,17 @@ public enum Permission {
     /** 放置/生成实体（刷怪蛋、船、矿车、盔甲架、末影水晶、画与展示框、拴绳栓结、烟花火箭）。 */
     SPAWN_ENTITY("spawn_entity"),
     /** 丢弃物品（Q 键丢出，或在背包界面把物品拖到界面外丢弃）。 */
-    DROP_ITEM("drop_item");
+    DROP_ITEM("drop_item"),
+    WORKSTATION("workstation"),
+    HARVEST_CROP("harvest_crop"),
+    PLANT_CROP("plant_crop"),
+    FEED_ANIMAL("feed_animal"),
+    RIDE_VEHICLE("ride_vehicle"),
+    TAKE_CONTAINER("take_container"),
+    PUT_CONTAINER("put_container"),
+    USE_PRIVATE_TELEPORTER("use_private_teleporter"),
+    CAPTURE_MOB("capture_mob"),
+    RELEASE_MOB("release_mob");
 
     private final String id;
 

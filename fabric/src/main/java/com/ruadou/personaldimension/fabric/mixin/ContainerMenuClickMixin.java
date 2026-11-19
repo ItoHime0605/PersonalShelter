@@ -44,6 +44,11 @@ public abstract class ContainerMenuClickMixin {
     @Inject(method = "clicked", at = @At("HEAD"), cancellable = true)
     private void personaldimension$clicked(int slotNum, int buttonNum, ClickType clickType, Player player, CallbackInfo ci) {
         if (player.level().isClientSide()) return;
+        if (GuardService.denyContainerClick(player, (AbstractContainerMenu)(Object)this, slotNum, buttonNum, clickType)) {
+            GuardService.resyncInventory(player);
+            ci.cancel();
+            return;
+        }
         if (!isDropAction(slotNum, clickType)) return;
 
         if (GuardService.deny(player, Permission.DROP_ITEM)) {

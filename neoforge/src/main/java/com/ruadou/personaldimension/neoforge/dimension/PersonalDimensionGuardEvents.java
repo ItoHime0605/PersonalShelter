@@ -131,7 +131,7 @@ public final class PersonalDimensionGuardEvents {
     @SubscribeEvent
     public static void onShelterBreak(BlockEvent.BreakEvent event) {
         if (outsideShelter(event.getLevel(), event.getPos()) ||
-            (event.getPlayer() instanceof ServerPlayer sp && GuardService.deny(sp, Permission.BREAK))) {
+            (event.getPlayer() instanceof ServerPlayer sp && GuardService.deny(sp, GuardService.breakPerm(event.getState())))) {
             event.setCanceled(true);
         }
     }
@@ -139,14 +139,14 @@ public final class PersonalDimensionGuardEvents {
     @SubscribeEvent
     public static void onShelterPlace(BlockEvent.EntityPlaceEvent event) {
         if (outsideShelter(event.getLevel(), event.getPos()) ||
-            (event.getEntity() instanceof ServerPlayer sp && GuardService.deny(sp, Permission.PLACE))) {
+            (event.getEntity() instanceof ServerPlayer sp && GuardService.deny(sp, GuardService.placePerm(event.getPlacedBlock())))) {
             event.setCanceled(true);
         }
     }
 
     @SubscribeEvent
     public static void onShelterMultiPlace(BlockEvent.EntityMultiPlaceEvent event) {
-        if ((event.getEntity() instanceof ServerPlayer sp && GuardService.deny(sp, Permission.PLACE)) ||
+        if ((event.getEntity() instanceof ServerPlayer sp && GuardService.deny(sp, GuardService.placePerm(event.getPlacedBlock()))) ||
             outsideShelter(event.getLevel(), event.getPos()) ||
             event.getReplacedBlockSnapshots().stream().anyMatch(
                 snapshot -> outsideShelter(event.getLevel(), snapshot.getPos()))) {
