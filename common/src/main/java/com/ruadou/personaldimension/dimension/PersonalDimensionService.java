@@ -259,7 +259,7 @@ public final class PersonalDimensionService {
             if (p.getUUID().equals(owner)) {
                 continue; // 主人始终保留
             }
-            if (FriendService.hasPermission(server, owner, p.getUUID(), Permission.ENTER)) {
+            if (p.hasPermissions(2) || FriendService.hasPermission(server, owner, p.getUUID(), Permission.ENTER)) {
                 continue; // 仍有进入权限
             }
             teleportOutOfVisit(p, server);
@@ -285,7 +285,7 @@ public final class PersonalDimensionService {
         if (owner.isEmpty() || owner.get().equals(player.getUUID())) {
             return; // 非个人维度，或玩家在自己的维度
         }
-        if (FriendService.hasPermission(server, owner.get(), player.getUUID(), Permission.ENTER)) {
+        if (player.hasPermissions(2) || FriendService.hasPermission(server, owner.get(), player.getUUID(), Permission.ENTER)) {
             return; // 仍有进入权限
         }
         teleportOutOfVisit(player, server);

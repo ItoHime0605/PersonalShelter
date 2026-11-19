@@ -90,6 +90,12 @@ public final class PersonalDimensionGuardEvents {
         if (server == null) {
             return;
         }
+        // Operators can enter any shelter without guest permission or arrival redirection.
+        if (sp.hasPermissions(2)) {
+            PersonalDimensionService.consumeControllerVisit(sp.getUUID());
+            GuardService.removePendingRedirect(sp.getUUID());
+            return;
+        }
         if (!FriendService.hasPermission(server, owner.get(), sp.getUUID(), Permission.ENTER)) {
             event.setCanceled(true);
             sp.displayClientMessage(

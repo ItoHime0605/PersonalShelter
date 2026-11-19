@@ -56,6 +56,12 @@ public class ServerPlayerChangeDimensionMixin {
         if (server == null) {
             return;
         }
+        // Operators retain the requested destination, independent of guest permissions.
+        if (self.hasPermissions(2)) {
+            PersonalDimensionService.consumeControllerVisit(self.getUUID());
+            GuardService.removePendingRedirect(self.getUUID());
+            return;
+        }
         // 无 ENTER 权限：取消传送
         if (!FriendService.hasPermission(server, owner.get(), self.getUUID(), Permission.ENTER)) {
             // 清除可能残留的控制器标记
