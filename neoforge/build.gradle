@@ -76,6 +76,10 @@ shadowJar {
     // Preserve Java Sound SPI registrations from bundled codec dependencies.
     relocate 'com.jcraft.jorbis', 'com.ruadou.personaldimension.shaded.jorbis'
     relocate 'com.jcraft.jogg', 'com.ruadou.personaldimension.shaded.jogg'
+    // Isolate all remaining bundled audio codec packages from Citadel and other mods.
+    relocate 'net.sourceforge.jaad', 'com.ruadou.personaldimension.shaded.jaad'
+    relocate 'javazoom', 'com.ruadou.personaldimension.shaded.javazoom'
+    relocate 'org.tritonus', 'com.ruadou.personaldimension.shaded.tritonus'
     mergeServiceFiles()
     archiveClassifier = 'dev-shadow'
 }
