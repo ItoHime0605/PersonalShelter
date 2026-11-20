@@ -38,7 +38,7 @@ public record DimensionInfoPacket(boolean created,
                                   long dayTime, boolean daylightCycle, boolean weatherCycle,
                                   boolean followOverworldTime, boolean followOverworldWeather,
                                   int moonPhaseOverride, boolean moonPhaseCycle, boolean followOverworldMoonPhase,
-                                  int moonPhase, int shelterLevel, boolean shelterEntryLocked)
+                                  int moonPhase, int shelterLevel, boolean shelterEntryLocked, boolean fireSpreadDisabled)
         implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DimensionInfoPacket> TYPE =
@@ -66,10 +66,11 @@ public record DimensionInfoPacket(boolean created,
                 int moonPhase = buf.readInt();
                 int shelterLevel = buf.readInt();
                 boolean shelterEntryLocked = buf.readBoolean();
+                boolean fireSpreadDisabled = buf.readBoolean();
                 return new DimensionInfoPacket(created, raining, thundering,
                     rainTime, thunderTime, clearWeatherTime, dayTime, daylightCycle, weatherCycle,
                     followOverworldTime, followOverworldWeather,
-                    moonPhaseOverride, moonPhaseCycle, followOverworldMoonPhase, moonPhase, shelterLevel, shelterEntryLocked);
+                    moonPhaseOverride, moonPhaseCycle, followOverworldMoonPhase, moonPhase, shelterLevel, shelterEntryLocked, fireSpreadDisabled);
             }
 
             @Override
@@ -91,6 +92,7 @@ public record DimensionInfoPacket(boolean created,
                 buf.writeInt(packet.moonPhase);
                 buf.writeInt(packet.shelterLevel);
                 buf.writeBoolean(packet.shelterEntryLocked);
+                buf.writeBoolean(packet.fireSpreadDisabled);
             }
         };
 
@@ -105,7 +107,7 @@ public record DimensionInfoPacket(boolean created,
             rainTime, thunderTime, clearWeatherTime,
             dayTime, daylightCycle, weatherCycle,
             followOverworldTime, followOverworldWeather,
-            moonPhaseOverride, moonPhaseCycle, followOverworldMoonPhase, moonPhase, shelterLevel, shelterEntryLocked));
+            moonPhaseOverride, moonPhaseCycle, followOverworldMoonPhase, moonPhase, shelterLevel, shelterEntryLocked, fireSpreadDisabled));
     }
 
     @Override

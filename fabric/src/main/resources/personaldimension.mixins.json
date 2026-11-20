@@ -7,6 +7,8 @@
     "MinecraftServerAccessor",
     "LevelAccessor",
     "LevelMixin",
+    "ShelterFireBlockMixin",
+    "ShelterLavaFluidMixin",
     "MappedRegistryAccessor",
     "ServerLevelAccessor",
     "ServerPlayerChangeDimensionMixin",

@@ -67,6 +67,12 @@ public class PersonalDimensionData extends SavedData {
     private int shelterLevel = 0;
     private net.minecraft.core.BlockPos shelterEntry;
     private boolean shelterEntryLocked;
+    private boolean fireSpreadDisabled = true;
+
+    public boolean isFireSpreadDisabled() { return fireSpreadDisabled; }
+    public void setFireSpreadDisabled(boolean disabled) {
+        if (fireSpreadDisabled != disabled) { fireSpreadDisabled = disabled; setDirty(); }
+    }
     private float shelterEntryYaw;
     private float shelterEntryPitch;
 
@@ -92,6 +98,7 @@ public class PersonalDimensionData extends SavedData {
         data.followOverworldMoonPhase = tag.getBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE);
         data.shelterLevel = Math.max(0, Math.min(4, tag.getInt(TAG_SHELTER_LEVEL)));
         data.shelterEntryLocked = tag.getBoolean("ShelterEntryLocked");
+        data.fireSpreadDisabled = !tag.contains("FireSpreadDisabled") || tag.getBoolean("FireSpreadDisabled");
         data.shelterEntryYaw = tag.getFloat("ShelterEntryYaw");
         data.shelterEntryPitch = tag.getFloat("ShelterEntryPitch");
         data.shelterName = tag.getString(TAG_SHELTER_NAME);
@@ -131,6 +138,7 @@ public class PersonalDimensionData extends SavedData {
         tag.putBoolean(TAG_FOLLOW_OVERWORLD_MOON_PHASE, this.followOverworldMoonPhase);
         tag.putInt(TAG_SHELTER_LEVEL, shelterLevel);
         tag.putBoolean("ShelterEntryLocked", shelterEntryLocked);
+        tag.putBoolean("FireSpreadDisabled", fireSpreadDisabled);
         tag.putFloat("ShelterEntryYaw", shelterEntryYaw);
         tag.putFloat("ShelterEntryPitch", shelterEntryPitch);
         tag.putString(TAG_SHELTER_NAME, shelterName);

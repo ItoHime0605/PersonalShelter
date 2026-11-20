@@ -39,6 +39,7 @@ public final class NetworkPackets {
         new PacketEntry(EditLandRadioStationPacket.TYPE, EditLandRadioStationPacket.STREAM_CODEC),
         new PacketEntry(RequestLandRadioPacket.TYPE, RequestLandRadioPacket.STREAM_CODEC),
         new PacketEntry(SetShelterEntryLockPacket.TYPE, SetShelterEntryLockPacket.STREAM_CODEC),
+        new PacketEntry(SetShelterFireSpreadPacket.TYPE, SetShelterFireSpreadPacket.STREAM_CODEC),
         new PacketEntry(SetDimensionTimePacket.TYPE, SetDimensionTimePacket.STREAM_CODEC),
         new PacketEntry(SetDimensionDaylightPacket.TYPE, SetDimensionDaylightPacket.STREAM_CODEC),
         new PacketEntry(SetDimensionWeatherPacket.TYPE, SetDimensionWeatherPacket.STREAM_CODEC),

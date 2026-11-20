@@ -82,6 +82,21 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private SettingsPage settingsPage = SettingsPage.HOME;
     private int refreshCounter;
     private Boolean lastEntryLockState;
+    private FlatButton fireSpreadToggle;
+
+    private boolean inOwnLand() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.player.level().dimension().equals(Platform.levelKeyFor(mc.player.getUUID()));
+    }
+
+    private void refreshFireSpreadToggle() {
+        if (fireSpreadToggle == null) return;
+        var info = com.ruadou.personaldimension.client.ClientDimensionInfo.info();
+        boolean ready = inOwnLand() && info != null && info.created();
+        fireSpreadToggle.active = ready;
+        fireSpreadToggle.setMessage(Component.literal(ready ? "關閉延燒：" + (info.fireSpreadDisabled() ? "是" : "否") : "關閉延燒：請進入自己的土地"));
+        fireSpreadToggle.setSelected(ready && info.fireSpreadDisabled());
+    }
     private int radioPage;
     private boolean radioCustomPage;
     private String radioEditingId = "";
@@ -135,6 +150,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     protected void init() {
         super.init();
         this.travelButton = null;
+        this.fireSpreadToggle = null;
         this.shelterNameInput = null;
         this.radioNameInput = null;
         this.radioUrlInput = null;
@@ -530,6 +546,15 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                     Component.translatable("gui.personaldimension.controller.settings.shelter_upgrade"),
                     x, firstY + 4 * (20 + PADDING), btnWidth, 20,
                     b -> Platform.sendToServer(new OpenShelterUpgradePacket())));
+            fireSpreadToggle = new FlatButton(Component.literal("關閉延燒"),
+                contentLeft(), firstY + 7 * (20 + PADDING), contentWidth(), 20, b -> {
+                    var info = com.ruadou.personaldimension.client.ClientDimensionInfo.info();
+                    if (inOwnLand() && info != null && info.created()) {
+                        Platform.sendToServer(new com.ruadou.personaldimension.network.SetShelterFireSpreadPacket(!info.fireSpreadDisabled()));
+                    }
+                });
+            this.addRenderableWidget(fireSpreadToggle);
+            refreshFireSpreadToggle();
         }
     }
 
@@ -722,6 +747,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     @Override
     public void tick() {
         super.tick();
+        refreshFireSpreadToggle();
         if (activeTab == Tab.SETTINGS && settingsPage == SettingsPage.RADIO
                 && lastRadioRevision != ClientLandRadioData.revision()
                 && !draggingVolumeSlider) {
