@@ -1,6 +1,17 @@
 package com.ruadou.personaldimension.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.client.resources.PlayerSkin;
+import com.mojang.authlib.GameProfile;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 好友系统 UI 的基元图标绘制工具。
@@ -12,6 +23,39 @@ import net.minecraft.client.gui.GuiGraphics;
 public final class FriendIcons {
 
     private FriendIcons() {}
+
+    private static final Map<UUID, PlayerSkin> PLAYER_SKINS = new ConcurrentHashMap<>();
+    private static final Set<UUID> SKIN_REQUESTED = ConcurrentHashMap.newKeySet();
+
+    /** Draw only the player's head area (face + outer hat layer), never the full body skin. */
+    public static void drawPlayerFace(GuiGraphics graphics, UUID playerId, String playerName,
+                                      int x, int y, int size) {
+        Minecraft minecraft = Minecraft.getInstance();
+        PlayerInfo online = minecraft.getConnection() == null
+            ? null : minecraft.getConnection().getPlayerInfo(playerId);
+        if (online != null) {
+            PlayerSkin skin = online.getSkin();
+            PLAYER_SKINS.put(playerId, skin);
+            PlayerFaceRenderer.draw(graphics, skin, x, y, size);
+            return;
+        }
+
+        PlayerSkin skin = PLAYER_SKINS.get(playerId);
+        if (skin == null) {
+            skin = DefaultPlayerSkin.get(playerId);
+            if (SKIN_REQUESTED.add(playerId)) {
+                String safeName = playerName == null || playerName.isBlank()
+                    ? playerId.toString() : playerName;
+                minecraft.getSkinManager().getOrLoad(new GameProfile(playerId, safeName))
+                    .whenComplete((loaded, error) -> {
+                        if (error == null && loaded != null) {
+                            minecraft.execute(() -> PLAYER_SKINS.put(playerId, loaded));
+                        }
+                    });
+            }
+        }
+        PlayerFaceRenderer.draw(graphics, skin, x, y, size);
+    }
 
     // 统一引用 ModernStyle 语义调色板，保留本地别名以维持绘制代码可读性
     private static final int SLOT_BG = ModernStyle.TRACK_OFF;                         // 凹槽底（深）

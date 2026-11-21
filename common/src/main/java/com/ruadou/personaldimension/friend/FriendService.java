@@ -2,8 +2,11 @@ package com.ruadou.personaldimension.friend;
 
 import com.ruadou.personaldimension.config.ConfigManager;
 import com.ruadou.personaldimension.platform.Platform;
+import com.ruadou.personaldimension.dimension.PersonalDimensionData;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +17,7 @@ import com.mojang.authlib.GameProfile;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 
 /**
  * 好友与权限领域服务（服务端）。
@@ -44,7 +48,12 @@ public final class FriendService {
             resolved = EnumSet.allOf(Permission.class);
         } else {
             OwnerFriendConfig config = data(server).getConfig(owner);
+            boolean isFriend = config != null && config.friends().containsKey(actor);
             resolved = config != null ? config.resolve(actor) : EnumSet.noneOf(Permission.class);
+            // 非好友開放參觀僅授予 ENTER，不繼承任何好友群組權限。
+            if (!isFriend && isOpenToNonFriends(server, owner)) {
+                resolved.add(Permission.ENTER);
+            }
         }
         // 过滤被管理员禁用的权限项（即使存档中仍有，也不再生效）
         resolved.retainAll(ConfigManager.availablePermissions());
@@ -53,6 +62,14 @@ public final class FriendService {
 
     public static boolean hasPermission(MinecraftServer server, UUID owner, UUID actor, Permission perm) {
         return resolve(server, owner, actor).contains(perm);
+    }
+
+    private static boolean isOpenToNonFriends(MinecraftServer server, UUID owner) {
+        ServerLevel level = server.getLevel(Platform.levelKeyFor(owner));
+        if (level == null) return false;
+        PersonalDimensionData saved = level.getDataStorage().get(
+            PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
+        return saved != null && saved.isOpenToNonFriends();
     }
 
     // ——— 名称解析 ———
@@ -91,15 +108,15 @@ public final class FriendService {
      */
     public static List<NamedPlayer> visitableFor(MinecraftServer server, UUID actor) {
         List<NamedPlayer> list = new ArrayList<>();
-        for (Map.Entry<UUID, OwnerFriendConfig> e : data(server).configs().entrySet()) {
-            UUID owner = e.getKey();
-            if (owner.equals(actor)) {
-                continue;
-            }
-            if (server.getLevel(Platform.levelKeyFor(owner)) == null) {
-                continue;
-            }
-            if (e.getValue().resolve(actor).contains(Permission.ENTER)) {
+        Set<UUID> owners = new LinkedHashSet<>(data(server).configs().keySet());
+        // 也掃描已載入的個人維度，讓尚未建立好友設定的地主也能公開參觀。
+        for (ServerLevel level : server.getAllLevels()) {
+            Platform.ownerOf(level.dimension()).ifPresent(owners::add);
+        }
+        for (UUID owner : owners) {
+            if (owner.equals(actor)) continue;
+            if (server.getLevel(Platform.levelKeyFor(owner)) == null) continue;
+            if (hasPermission(server, owner, actor, Permission.ENTER)) {
                 list.add(new NamedPlayer(owner, resolveName(server, owner)));
             }
         }

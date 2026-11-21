@@ -83,6 +83,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
     private int refreshCounter;
     private Boolean lastEntryLockState;
     private FlatButton fireSpreadToggle;
+    private FlatButton nonFriendVisitToggle;
 
     private boolean inOwnLand() {
         Minecraft mc = Minecraft.getInstance();
@@ -96,6 +97,17 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         fireSpreadToggle.active = ready;
         fireSpreadToggle.setMessage(Component.literal(ready ? "關閉延燒：" + (info.fireSpreadDisabled() ? "是" : "否") : "關閉延燒：請進入自己的土地"));
         fireSpreadToggle.setSelected(ready && info.fireSpreadDisabled());
+    }
+
+    private void refreshNonFriendVisitToggle() {
+        if (nonFriendVisitToggle == null) return;
+        var info = com.ruadou.personaldimension.client.ClientDimensionInfo.info();
+        boolean ready = ownDimensionExists() && inOwnLand() && info != null && info.created();
+        nonFriendVisitToggle.active = ready;
+        nonFriendVisitToggle.setMessage(Component.literal(ready
+            ? "開放非好友參觀：" + (info.openToNonFriends() ? "是" : "否")
+            : "開放非好友參觀：請進入自己的土地"));
+        nonFriendVisitToggle.setSelected(ready && info.openToNonFriends());
     }
     private int radioPage;
     private boolean radioCustomPage;
@@ -151,6 +163,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
         super.init();
         this.travelButton = null;
         this.fireSpreadToggle = null;
+        this.nonFriendVisitToggle = null;
         this.shelterNameInput = null;
         this.radioNameInput = null;
         this.radioUrlInput = null;
@@ -368,6 +381,18 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                     Component.translatable("gui.personaldimension.controller.create.button"),
                     x, upperY, btnWidth, 20, b -> openCreateMenu()));
         }
+        if (ownDimensionExists()) {
+            nonFriendVisitToggle = new FlatButton(Component.literal("開放非好友參觀"),
+                contentLeft(), contentTop() + PADDING + 112, contentWidth(), 20, b -> {
+                    var info = com.ruadou.personaldimension.client.ClientDimensionInfo.info();
+                    if (inOwnLand() && info != null && info.created()) {
+                        Platform.sendToServer(new com.ruadou.personaldimension.network.SetNonFriendVisitAccessPacket(
+                            !info.openToNonFriends()));
+                    }
+                });
+            this.addRenderableWidget(nonFriendVisitToggle);
+            refreshNonFriendVisitToggle();
+        }
         this.travelButton = new FlatButton(travelButtonMessage(), x, travelY, btnWidth, 20, b -> requestTravel());
         this.addRenderableWidget(this.travelButton);
     }
@@ -555,6 +580,7 @@ public class PersonalDimensionControllerScreen extends PanelScreen {
                 });
             this.addRenderableWidget(fireSpreadToggle);
             refreshFireSpreadToggle();
+        refreshNonFriendVisitToggle();
         }
     }
 

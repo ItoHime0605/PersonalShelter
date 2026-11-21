@@ -788,6 +788,8 @@ public final class PersonalDimensionService {
         int moonPhase = followMoonPhase
             ? server.overworld().getMoonPhase()
             : Math.max(0, data.getEffectiveMoonPhase());
+        PersonalDimensionData shelterData =
+            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID);
         DimensionInfoPacket packet = new DimensionInfoPacket(
             true,
             data.isRaining(), data.isThundering(),
@@ -795,9 +797,10 @@ public final class PersonalDimensionService {
             level.getDayTime(), daylight, weatherCycle,
             followTime, followWeather,
             moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase,
-            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).getShelterLevel(),
-            level.getDataStorage().computeIfAbsent(PersonalDimensionData.FACTORY, PersonalDimensionData.ID).isShelterEntryLocked(),
-            ShelterFireRules.isDisabled(level));
+            shelterData.getShelterLevel(),
+            shelterData.isShelterEntryLocked(),
+            ShelterFireRules.isDisabled(level),
+            shelterData.isOpenToNonFriends());
         Platform.sendToPlayer(player, packet);
     }
 

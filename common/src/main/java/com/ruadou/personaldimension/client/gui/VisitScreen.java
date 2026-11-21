@@ -88,8 +88,8 @@ public class VisitScreen extends FriendBaseScreen {
         for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < owners.size(); i++) {
             VisitShelterEntry owner = owners.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
-            FriendIcons.drawArrow(graphics, contentLeft(), rowY + 6, ModernStyle.SUCCESS);
-            int nameX = contentLeft() + 12;
+            FriendIcons.drawPlayerFace(graphics, owner.id(), owner.ownerName(), contentLeft(), rowY + 4, 16);
+            int nameX = contentLeft() + 20;
             int nameW = enterButtonX() - nameX - 4;
             graphics.drawString(this.font, GuiText.ellipsize(this.font, owner.ownerName(), nameW),
                 nameX, rowY + 2, ModernStyle.TEXT, false);

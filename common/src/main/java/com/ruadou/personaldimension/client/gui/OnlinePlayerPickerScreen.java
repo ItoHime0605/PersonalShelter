@@ -110,8 +110,8 @@ public class OnlinePlayerPickerScreen extends FriendBaseScreen {
         for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < online.size(); i++) {
             NamedPlayer p = online.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
-            FriendIcons.drawPerson(graphics, contentLeft(), rowY + 5, ModernStyle.TEXT_SUB);
-            int nameX = contentLeft() + 14;
+            FriendIcons.drawPlayerFace(graphics, p.id(), p.name(), contentLeft(), rowY + 3, 16);
+            int nameX = contentLeft() + 20;
             int nameW = addButtonX() - nameX - 4;
             graphics.drawString(this.font, GuiText.ellipsize(this.font, p.name(), nameW),
                 nameX, rowY + 6, ModernStyle.TEXT, false);

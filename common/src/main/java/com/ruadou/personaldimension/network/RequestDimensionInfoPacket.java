@@ -41,7 +41,7 @@ public record RequestDimensionInfoPacket() implements CustomPacketPayload {
         ServerLevel personal = server.getLevel(key);
         if (personal == null || !(personal.getLevelData() instanceof ServerLevelData data)) {
             Platform.sendToPlayer(player, new DimensionInfoPacket(
-                false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0, false, true));
+                false, false, false, 0, 0, 0, 0L, true, true, false, false, -1, true, false, 0, 0, false, true, false));
             return;
         }
         boolean daylight = true;
@@ -65,6 +65,10 @@ public record RequestDimensionInfoPacket() implements CustomPacketPayload {
                 ? server.overworld().getMoonPhase()
                 : Math.max(0, pd.getEffectiveMoonPhase());
         }
+        com.ruadou.personaldimension.dimension.PersonalDimensionData shelterData =
+            personal.getDataStorage().get(
+                com.ruadou.personaldimension.dimension.PersonalDimensionData.FACTORY,
+                com.ruadou.personaldimension.dimension.PersonalDimensionData.ID);
         DimensionInfoPacket response = new DimensionInfoPacket(
             true,
             data.isRaining(), data.isThundering(),
@@ -72,13 +76,10 @@ public record RequestDimensionInfoPacket() implements CustomPacketPayload {
             personal.getDayTime(), daylight, weatherCycle,
             followTime, followWeather,
             moonPhaseOverride, moonPhaseCycle, followMoonPhase, moonPhase,
-            java.util.Optional.ofNullable(personal.getDataStorage().get(com.ruadou.personaldimension.dimension.PersonalDimensionData.FACTORY,
-                com.ruadou.personaldimension.dimension.PersonalDimensionData.ID))
-                .map(com.ruadou.personaldimension.dimension.PersonalDimensionData::getShelterLevel).orElse(0),
-            java.util.Optional.ofNullable(personal.getDataStorage().get(com.ruadou.personaldimension.dimension.PersonalDimensionData.FACTORY,
-                com.ruadou.personaldimension.dimension.PersonalDimensionData.ID))
-                .map(com.ruadou.personaldimension.dimension.PersonalDimensionData::isShelterEntryLocked).orElse(false),
-            com.ruadou.personaldimension.dimension.ShelterFireRules.isDisabled(personal));
+            shelterData == null ? 0 : shelterData.getShelterLevel(),
+            shelterData != null && shelterData.isShelterEntryLocked(),
+            com.ruadou.personaldimension.dimension.ShelterFireRules.isDisabled(personal),
+            shelterData != null && shelterData.isOpenToNonFriends());
         Platform.sendToPlayer(player, response);
     }
 

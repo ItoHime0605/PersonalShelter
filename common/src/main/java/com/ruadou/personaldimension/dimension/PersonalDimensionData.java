@@ -68,8 +68,13 @@ public class PersonalDimensionData extends SavedData {
     private net.minecraft.core.BlockPos shelterEntry;
     private boolean shelterEntryLocked;
     private boolean fireSpreadDisabled = true;
+    private boolean openToNonFriends;
 
     public boolean isFireSpreadDisabled() { return fireSpreadDisabled; }
+    public boolean isOpenToNonFriends() { return openToNonFriends; }
+    public void setOpenToNonFriends(boolean open) {
+        if (openToNonFriends != open) { openToNonFriends = open; setDirty(); }
+    }
     public void setFireSpreadDisabled(boolean disabled) {
         if (fireSpreadDisabled != disabled) { fireSpreadDisabled = disabled; setDirty(); }
     }
@@ -99,6 +104,7 @@ public class PersonalDimensionData extends SavedData {
         data.shelterLevel = Math.max(0, Math.min(4, tag.getInt(TAG_SHELTER_LEVEL)));
         data.shelterEntryLocked = tag.getBoolean("ShelterEntryLocked");
         data.fireSpreadDisabled = !tag.contains("FireSpreadDisabled") || tag.getBoolean("FireSpreadDisabled");
+        data.openToNonFriends = tag.getBoolean("OpenToNonFriends");
         data.shelterEntryYaw = tag.getFloat("ShelterEntryYaw");
         data.shelterEntryPitch = tag.getFloat("ShelterEntryPitch");
         data.shelterName = tag.getString(TAG_SHELTER_NAME);
@@ -139,6 +145,7 @@ public class PersonalDimensionData extends SavedData {
         tag.putInt(TAG_SHELTER_LEVEL, shelterLevel);
         tag.putBoolean("ShelterEntryLocked", shelterEntryLocked);
         tag.putBoolean("FireSpreadDisabled", fireSpreadDisabled);
+        tag.putBoolean("OpenToNonFriends", openToNonFriends);
         tag.putFloat("ShelterEntryYaw", shelterEntryYaw);
         tag.putFloat("ShelterEntryPitch", shelterEntryPitch);
         tag.putString(TAG_SHELTER_NAME, shelterName);

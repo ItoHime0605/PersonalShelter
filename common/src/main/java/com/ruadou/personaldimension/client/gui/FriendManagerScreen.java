@@ -235,8 +235,8 @@ public class FriendManagerScreen extends FriendBaseScreen {
         for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < friends.size(); i++) {
             FriendView f = friends.get(this.scrollOffset + i);
             int rowY = listTop + i * ROW_H;
-            FriendIcons.drawPerson(graphics, contentLeft(), rowY + 5, ModernStyle.TEXT_SUB);
-            int nameX = contentLeft() + 14;
+            FriendIcons.drawPlayerFace(graphics, f.id(), f.name(), contentLeft(), rowY + 3, 16);
+            int nameX = contentLeft() + 20;
             int nameW = groupButtonX() - nameX - 4;
             graphics.drawString(this.font, GuiText.ellipsize(this.font, f.name(), nameW),
                 nameX, rowY + 6, ModernStyle.TEXT, false);
