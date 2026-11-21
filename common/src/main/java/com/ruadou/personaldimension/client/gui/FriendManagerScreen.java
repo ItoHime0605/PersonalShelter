@@ -64,54 +64,78 @@ public class FriendManagerScreen extends FriendBaseScreen {
         int removeX = removeButtonX();
         int groupX = groupButtonX();
 
-        // 好友行：每行右侧放"组"循环按钮与"移除"按钮（名称/图标在 renderContent 绘制）
-        for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < friends.size(); i++) {
-            FriendView f = friends.get(this.scrollOffset + i);
-            int rowY = listTop + i * ROW_H;
-            this.addRenderableWidget(new FlatButton(groupLabel(f.group()),
-                groupX, rowY + 1, GROUP_BTN_W, 20, b -> {
-                    expandedGroupFor = f.id().equals(expandedGroupFor) ? null : f.id();
-                    groupPickerOffset = 0;
-                    rebuildWidgets();
-                }));
-            this.addRenderableWidget(new FlatButton(
-                Component.translatable("gui.personaldimension.friend.remove"),
-                removeX, rowY + 1, REMOVE_BTN_W, 20,
-                b -> Platform.sendToServer(FriendConfigActionPacket.removeFriend(f.id()))));
+        FriendView selectedFriend = null;
+        if (expandedGroupFor != null) {
+            selectedFriend = friends.stream()
+                .filter(f -> f.id().equals(expandedGroupFor))
+                .findFirst().orElse(null);
+            if (selectedFriend == null) {
+                expandedGroupFor = null;
+            }
         }
 
-        // Overlay dropdown: choose only existing groups, rather than cycling them.
-        if (expandedGroupFor != null) {
-            FriendView selectedFriend = friends.stream().filter(f -> f.id().equals(expandedGroupFor)).findFirst().orElse(null);
-            if (selectedFriend != null) {
-                int selectedIndex = friends.indexOf(selectedFriend) - scrollOffset;
-                // Four rows remain inside the list: paging arrows + two choices.
-                int pickerTop = listTop;
-                int pageSize = 2;
-                groupPickerOffset = Math.max(0, Math.min(groupPickerOffset, Math.max(0, groups.size() - pageSize)));
+        // The group picker is modal: do not register the friend-row buttons behind it.
+        // PanelScreen renders children in visual order, while Screen input dispatch can
+        // reach earlier children first. Keeping background row widgets out prevents click-through.
+        if (expandedGroupFor == null) {
+            for (int i = 0; i < VISIBLE_ROWS && this.scrollOffset + i < friends.size(); i++) {
+                FriendView f = friends.get(this.scrollOffset + i);
+                int rowY = listTop + i * ROW_H;
+                this.addRenderableWidget(new FlatButton(groupLabel(f.group()),
+                    groupX, rowY + 1, GROUP_BTN_W, 20, b -> {
+                        expandedGroupFor = f.id();
+                        groupPickerOffset = 0;
+                        rebuildWidgets();
+                    }));
+                this.addRenderableWidget(new FlatButton(
+                    Component.translatable("gui.personaldimension.friend.remove"),
+                    removeX, rowY + 1, REMOVE_BTN_W, 20,
+                    b -> Platform.sendToServer(FriendConfigActionPacket.removeFriend(f.id()))));
+            }
+        } else {
+            // Modal dropdown: only the selected friend can receive the group assignment.
+            final FriendView targetFriend = selectedFriend;
+            int pickerTop = listTop;
+            int pageSize = 2;
+            groupPickerOffset = Math.max(0,
+                Math.min(groupPickerOffset, Math.max(0, groups.size() - pageSize)));
+
+            if (groups.isEmpty()) {
+                this.addRenderableWidget(new FlatButton(Component.literal("沒有可用群組"),
+                    groupX, pickerTop, GROUP_BTN_W, 20, b -> {
+                        expandedGroupFor = null;
+                        rebuildWidgets();
+                    }));
+            } else {
                 if (groups.size() > pageSize) {
-                    this.addRenderableWidget(new FlatButton(Component.literal("▲ 上一頁"),
+                    FlatButton previous = new FlatButton(Component.literal("▲ 上一頁"),
                         groupX, pickerTop, GROUP_BTN_W, 19, b -> {
                             groupPickerOffset = Math.max(0, groupPickerOffset - pageSize);
                             rebuildWidgets();
-                        }));
+                        });
+                    previous.active = groupPickerOffset > 0;
+                    this.addRenderableWidget(previous);
                 }
                 for (int n = 0; n < Math.min(pageSize, groups.size() - groupPickerOffset); n++) {
                     GroupView g = groups.get(groupPickerOffset + n);
                     final String groupName = g.name();
                     this.addRenderableWidget(new FlatButton(Component.literal(groupName),
                         groupX, pickerTop + (n + 1) * ROW_H, GROUP_BTN_W, 20, b -> {
-                            Platform.sendToServer(FriendConfigActionPacket.assignGroup(selectedFriend.id(), groupName));
+                            Platform.sendToServer(
+                                FriendConfigActionPacket.assignGroup(targetFriend.id(), groupName));
                             expandedGroupFor = null;
                             rebuildWidgets();
                         }));
                 }
                 if (groups.size() > pageSize) {
-                    this.addRenderableWidget(new FlatButton(Component.literal("▼ 下一頁"),
+                    FlatButton next = new FlatButton(Component.literal("▼ 下一頁"),
                         groupX, pickerTop + 3 * ROW_H, GROUP_BTN_W, 19, b -> {
-                            groupPickerOffset = Math.min(Math.max(0, groups.size() - pageSize), groupPickerOffset + pageSize);
+                            groupPickerOffset = Math.min(
+                                Math.max(0, groups.size() - pageSize), groupPickerOffset + pageSize);
                             rebuildWidgets();
-                        }));
+                        });
+                    next.active = groupPickerOffset + pageSize < groups.size();
+                    this.addRenderableWidget(next);
                 }
             }
         }
@@ -240,6 +264,19 @@ public class FriendManagerScreen extends FriendBaseScreen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (expandedGroupFor != null) {
+            FriendDataSnapshot config = ClientFriendData.ownConfig();
+            List<GroupView> groups = config == null ? List.of() : config.groups();
+            int pageSize = 2;
+            int maxOffset = Math.max(0, groups.size() - pageSize);
+            int step = scrollY > 0 ? -pageSize : pageSize;
+            int next = Math.max(0, Math.min(maxOffset, groupPickerOffset + step));
+            if (next != groupPickerOffset) {
+                groupPickerOffset = next;
+                rebuildWidgets();
+            }
+            return true;
+        }
         int size = friendCount();
         int maxOffset = Math.max(0, size - VISIBLE_ROWS);
         int next = Math.max(0, Math.min(maxOffset, this.scrollOffset - (int) Math.signum(scrollY)));
@@ -252,6 +289,22 @@ public class FriendManagerScreen extends FriendBaseScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (expandedGroupFor != null) {
+            boolean insidePicker = mouseX >= groupButtonX()
+                && mouseX < groupButtonX() + GROUP_BTN_W
+                && mouseY >= listTop()
+                && mouseY < listTop() + VISIBLE_ROWS * ROW_H;
+            if (!insidePicker) {
+                if (button == 0) {
+                    expandedGroupFor = null;
+                    rebuildWidgets();
+                }
+                // Consume clicks outside the popup so they cannot activate background controls.
+                return true;
+            }
+            // Consume blank space inside the popup as well; only its own buttons are actionable.
+            return super.mouseClicked(mouseX, mouseY, button) || insidePicker;
+        }
         if (button == 0 && ScrollBar.needed(friendCount(), VISIBLE_ROWS)
             && ScrollBar.isOver(mouseX, mouseY, scrollbarX(), listTop(), VISIBLE_ROWS * ROW_H)) {
             this.draggingBar = true;
@@ -263,6 +316,7 @@ public class FriendManagerScreen extends FriendBaseScreen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (expandedGroupFor != null) return true;
         if (this.draggingBar && button == 0) {
             setScrollByMouse(mouseY);
             return true;
@@ -272,10 +326,21 @@ public class FriendManagerScreen extends FriendBaseScreen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (expandedGroupFor != null) return true;
         if (button == 0) {
             this.draggingBar = false;
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (expandedGroupFor != null && keyCode == 256) { // ESC closes the group picker first
+            expandedGroupFor = null;
+            rebuildWidgets();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     /** 由鼠标 y 设置滚动偏移并重建行控件（仅在偏移变化时）。 */

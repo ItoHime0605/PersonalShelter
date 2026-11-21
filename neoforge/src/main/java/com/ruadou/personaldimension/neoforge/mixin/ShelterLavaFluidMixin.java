@@ -2,7 +2,7 @@ package com.ruadou.personaldimension.neoforge.mixin;
 
 import com.ruadou.personaldimension.dimension.ShelterFireRules;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.LavaFluid;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ShelterLavaFluidMixin {
     // Lava randomTick is ignition only; fluid flow is handled separately.
     @Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
-    private void pshelter$blockLavaIgnition(ServerLevel level, BlockPos pos, FluidState state, RandomSource random, CallbackInfo ci) {
+    private void pshelter$blockLavaIgnition(Level level, BlockPos pos, FluidState state, RandomSource random, CallbackInfo ci) {
         if (ShelterFireRules.isDisabled(level)) ci.cancel();
     }
 }
