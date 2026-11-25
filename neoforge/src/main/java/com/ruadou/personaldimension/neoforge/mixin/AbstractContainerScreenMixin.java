@@ -127,45 +127,5 @@ public abstract class AbstractContainerScreenMixin {
         ci.cancel();
     }
 
-    /**
-     * 场景4：关闭容器时光标上有物品
-     *
-     * <p>原版流程：客户端 AbstractContainerScreen.onClose → LocalPlayer.closeContainer
-     * → 发包 + clientSideCloseContainer → menu.removed(LocalPlayer)
-     * 但 AbstractContainerMenu.removed 只在 player instanceof ServerPlayer 时处理光标，
-     * 客户端 LocalPlayer 不是 ServerPlayer，光标物品不被处理 → 客户端光标保留"幻影"。
-     *
-     * <p>服务端 AbstractContainerMenu.removed(ServerPlayer) 会把光标物品放回背包。
-     * 但客户端光标幻影未清空，下次操作时幻影被覆盖，物品"被吞"。
-     *
-     * <p>修复：在 onClose 调用 closeContainer 之前，客户端主动把光标物品放回背包，
-     * 与服务端行为一致，避免幻影。
-     *
-     * <p>注意：必须先检查光标再检查权限，否则空光标也会触发权限提示。
-     */
-    @SuppressWarnings("null") // ItemStack.EMPTY 的 @Nonnull 转换警告是 Mojang mappings 注解摩擦
-    @Inject(method = "onClose", at = @At("HEAD"))
-    private void personaldimension$onClose(CallbackInfo ci) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        LocalPlayer player = mc.player;
-
-        ItemStack carried = getMenu().getCarried();
-        if (carried == null || carried.isEmpty()) return;
-
-        // 创造模式：ItemPicker 拿取的物品是纯客户端操作，服务端不追踪
-        // 放回背包会被服务端同步覆盖，直接清空光标避免幻影（创造物品无限）
-        if (player.isCreative()) {
-            getMenu().setCarried(ItemStack.EMPTY);
-            return;
-        }
-
-        // 生存/冒险模式：光标有物品时才检查权限
-        if (!shouldDenyDrop(mc)) return;
-
-        // 客户端预测：把光标物品放回背包，清空光标
-        player.getInventory().placeItemBackInInventory(carried);
-        getMenu().setCarried(ItemStack.EMPTY);
-        LOGGER.info("[NeoForge-客户端拦截] 场景4: 关闭容器时光标物品已放回背包 (item={})", carried.getItem());
-    }
+    // Closing a menu is handled by the server; never mutate predicted inventory here.
 }
