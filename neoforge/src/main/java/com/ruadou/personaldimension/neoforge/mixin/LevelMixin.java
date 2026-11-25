@@ -41,7 +41,8 @@ public interface LevelMixin {
         if ((Object) this instanceof Level level) {
             LevelData data = level.getLevelData();
             if (data instanceof PersonalDimensionLevelData pd) {
-                int phase = pd.getEffectiveMoonPhase();
+                int phase = pd.isFollowOverworldMoonPhase() && level instanceof net.minecraft.server.level.ServerLevel serverLevel
+                    ? serverLevel.getServer().overworld().getMoonPhase() : pd.getEffectiveMoonPhase();
                 if (phase >= 0) {
                     cir.setReturnValue(phase);
                 }

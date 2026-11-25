@@ -21,6 +21,8 @@ public final class ModNetworking {
     @SuppressWarnings("unchecked")
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1").optional();
+        registrar.playToClient(ShelterMoonSyncPacket.TYPE, ShelterMoonSyncPacket.CODEC,
+            (payload, context) -> context.enqueueWork(payload::handle));
 
         for (NetworkPackets.PacketEntry entry : NetworkPackets.S2C_PACKETS) {
             registrar.playToClient(entry.type(), entry.codec(),

@@ -32,7 +32,8 @@ import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.phys.EntityHitResult;
-import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import com.ruadou.personaldimension.neoforge.network.ShelterMoonSyncPacket;
+import com.ruadou.personaldimension.dimension.PersonalDimensionLevelData;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
@@ -52,6 +53,7 @@ public final class PersonalDimensionGuardEvents {
     private static final Logger LOGGER = LoggerFactory.getLogger("Personaldimension");
 
     private static final Map<UUID, String> LAST_BORDER_STATE = new ConcurrentHashMap<>();
+    private static final Map<UUID, ShelterMoonSyncPacket> LAST_MOON_STATE = new ConcurrentHashMap<>();
 
     private PersonalDimensionGuardEvents() {}
 
@@ -200,6 +202,21 @@ public final class PersonalDimensionGuardEvents {
         com.ruadou.personaldimension.dimension.ShelterTravelCountdown.tick(player);
         LandRadioSync.tick(player);
         if (!(player.level() instanceof ServerLevel level)) return;
+        // Separate the current dimension's rendering state from the owner's controller snapshot.
+        if (level.getLevelData() instanceof PersonalDimensionLevelData pd
+                && player.connection.hasChannel(ShelterMoonSyncPacket.TYPE)) {
+            int phase = pd.isFollowOverworldMoonPhase() ? player.getServer().overworld().getMoonPhase() : level.getMoonPhase();
+            var moon = new ShelterMoonSyncPacket(level.dimension().location(), Math.floorMod(phase, 8));
+            if (!moon.equals(LAST_MOON_STATE.get(player.getUUID()))) {
+                player.connection.send(moon);
+                LAST_MOON_STATE.put(player.getUUID(), moon);
+            }
+        } else {
+            if (LAST_MOON_STATE.remove(player.getUUID()) != null
+                    && player.connection.hasChannel(ShelterMoonSyncPacket.TYPE)) {
+                player.connection.send(new ShelterMoonSyncPacket(level.dimension().location(), -1));
+            }
+        }
         if (ModDimensions.ownerOf(level.dimension()).isEmpty()) {
             // Restore the real server border after leaving a shelter. Never mutate it.
             if (LAST_BORDER_STATE.remove(player.getUUID()) != null) {
@@ -240,28 +257,9 @@ public final class PersonalDimensionGuardEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             com.ruadou.personaldimension.dimension.ShelterTravelCountdown.cancel(player);
             LAST_BORDER_STATE.remove(player.getUUID());
+            LAST_MOON_STATE.remove(player.getUUID());
             LandRadioSync.logout(player);
         }
     }
 
-    /**
-     * 容器关闭后同步背包：
-     * 如果玩家无丢弃权限且光标有物品，把光标物品放回背包。
-     * 防止关闭容器时光标物品被原版丢弃导致消失。
-     */
-    @SubscribeEvent
-    public static void onContainerClose(PlayerContainerEvent.Close event) {
-        if (event.getEntity() instanceof ServerPlayer sp) {
-            // 检查光标是否有物品
-            var carried = sp.containerMenu.getCarried();
-            if (carried != null && !carried.isEmpty()
-                && GuardService.deny(sp, Permission.DROP_ITEM)) {
-                // 把光标物品放回背包
-                sp.getInventory().placeItemBackInInventory(carried);
-                sp.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
-                LOGGER.info("[NeoForge-容器关闭] 光标物品已放回背包: player={}", sp.getName());
-            }
-            GuardService.resyncInventory(sp);
-        }
-    }
 }

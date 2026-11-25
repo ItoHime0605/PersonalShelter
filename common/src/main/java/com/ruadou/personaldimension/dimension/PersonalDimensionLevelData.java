@@ -364,7 +364,7 @@ public class PersonalDimensionLevelData extends DerivedLevelData {
             return this.moonPhaseOverride;
         }
         // 跟随时间：基于本维度独立 dayTime 计算（与原版 Level.getMoonPhase() 语义一致）
-        return (int) (this.dayTime / 24000L) % 8;
+        return (int) Math.floorMod(getDayTime() / 24000L, 8L);
     }
 
     public int getMoonPhaseOverride() {
@@ -431,7 +431,7 @@ public class PersonalDimensionLevelData extends DerivedLevelData {
     // 原 vanilla mappings 中不存在，因此这里不加 @Override；跟随主世界时按原版语义返回主世界 dayTime 派生值。
 
     public float getDayTimeFraction() {
-        return this.followOverworldTime ? super.getDayTime() / 24000.0f : this.dayTimeFraction;
+        return this.followOverworldTime ? 0.0f : this.dayTimeFraction;
     }
 
     public void setDayTimeFraction(float dayTimeFraction) {
@@ -439,7 +439,7 @@ public class PersonalDimensionLevelData extends DerivedLevelData {
     }
 
     public float getDayTimePerTick() {
-        return this.followOverworldTime ? 1.0f : this.dayTimePerTick;
+        return this.followOverworldTime ? -1.0f : this.dayTimePerTick;
     }
 
     public void setDayTimePerTick(float dayTimePerTick) {

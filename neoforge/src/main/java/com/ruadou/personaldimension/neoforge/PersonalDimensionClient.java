@@ -22,6 +22,7 @@ public class PersonalDimensionClient {
         // 将本类注册到 MOD 总线，@SubscribeEvent 方法将按事件类型自动订阅
         container.getEventBus().register(this);
         NeoForge.EVENT_BUS.register(ClientRadioLifecycle.class);
+        NeoForge.EVENT_BUS.register(com.ruadou.personaldimension.neoforge.client.ShelterMoonLifecycle.class);
     }
 
     /**
