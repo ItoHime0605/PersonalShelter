@@ -1,6 +1,5 @@
 package com.ruadou.personaldimension.block;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import com.ruadou.personaldimension.block.entity.TeleporterBlockEntity;
@@ -21,7 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * 维度传送器方块：放置后记录位置到全局 {@link TeleporterData}，
- * 供玩家从个人维度控制器 GUI 中选择并传送到此方块上方。
+ * 仅供玩家在自己的个人维度内传送到此方块上方。
  *
  * <p>方块本身无 GUI、无红石逻辑——仅作为传送目标锚点。
  * 放置时绑定放置者 UUID，破坏时从全局数据中移除对应条目。
@@ -44,9 +43,8 @@ public class TeleporterBlock extends Block implements EntityBlock {
         if (level.isClientSide() || !(placer instanceof ServerPlayer player)) {
             return;
         }
-        Optional<UUID> dimOwner = Platform.ownerOf(level.dimension());
-        if (dimOwner.isPresent() && !dimOwner.get().equals(player.getUUID())) {
-            return; // 在他人维度放置已被平台事件拦截，此处为防御性兜底
+        if (!Platform.levelKeyFor(player.getUUID()).equals(level.dimension())) {
+            return; // Only register anchors inside the placer’s own shelter.
         }
         if (level.getBlockEntity(pos) instanceof TeleporterBlockEntity be) {
             be.setOwner(player.getUUID());

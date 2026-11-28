@@ -53,9 +53,15 @@ class TeleportTabPanel {
         }
     }
 
+    private boolean inOwnShelter() {
+        var player = Minecraft.getInstance().player;
+        return player != null && Platform.levelKeyFor(player.getUUID()).equals(player.level().dimension());
+    }
+
     void build() {
         List<TeleporterEntry> entries = ClientTeleporterData.teleporters();
         this.lastList = entries;
+        if (!inOwnShelter()) return;
 
         int maxOffset = Math.max(0, entries.size() - visibleRows());
         this.scrollOffset = Math.max(0, Math.min(this.scrollOffset, maxOffset));
@@ -195,6 +201,7 @@ class TeleportTabPanel {
     }
 
     private void teleport(int index) {
+        if (!inOwnShelter()) return;
         Platform.sendToServer(new TeleportToTargetPacket(index));
         screen.onClose();
     }
@@ -206,6 +213,12 @@ class TeleportTabPanel {
     }
 
     void render(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (!inOwnShelter()) {
+            graphics.drawString(Minecraft.getInstance().font,
+                Component.translatable("personaldimension.message.teleporter_own_shelter_only"),
+                screen.panelContentLeft(), listTop() + 4, ModernStyle.TEXT_SUB, false);
+            return;
+        }
         List<TeleporterEntry> entries = ClientTeleporterData.teleporters();
         int listTop = listTop();
         int listBottom = listBottom();
@@ -269,6 +282,7 @@ class TeleportTabPanel {
     // ——— 鼠标事件 ———
 
     boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!inOwnShelter()) return false;
         int size = ClientTeleporterData.teleporters().size();
         int maxOffset = Math.max(0, size - visibleRows());
         int next = Math.max(0, Math.min(maxOffset, this.scrollOffset - (int) Math.signum(scrollY)));
@@ -280,6 +294,7 @@ class TeleportTabPanel {
     }
 
     boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!inOwnShelter()) return false;
         List<TeleporterEntry> entries = ClientTeleporterData.teleporters();
         int listTop = listTop();
         int listBottom = listBottom();

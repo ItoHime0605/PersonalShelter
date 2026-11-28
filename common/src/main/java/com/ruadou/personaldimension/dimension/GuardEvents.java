@@ -91,8 +91,10 @@ public final class GuardEvents {
             if (state.getBlock() instanceof TeleporterBlock
                 || state.getBlock() instanceof FriendVisitorTeleporterBlock) {
                 Optional<UUID> dimOwner = ModDimensions.ownerOf(level.dimension());
-                if (dimOwner.isPresent()
-                    && !dimOwner.get().equals(player.getUUID())) {
+                boolean invalidDimension = state.getBlock() instanceof TeleporterBlock
+                    ? !ModDimensions.levelKeyFor(player.getUUID()).equals(level.dimension())
+                    : dimOwner.isPresent() && !dimOwner.get().equals(player.getUUID());
+                if (invalidDimension) {
                     if (player instanceof ServerPlayer sp) {
                         sp.displayClientMessage(
                             Component.translatable(
