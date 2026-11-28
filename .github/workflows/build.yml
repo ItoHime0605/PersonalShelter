@@ -41,3 +41,34 @@ jobs:
           name: personal-shelter-neoforge-1.21.1
           path: neoforge/build/libs/*.jar
           if-no-files-found: error
+      - name: Smoke test production JAR on NeoForge 21.1.267
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^mod_version = //p' gradle.properties)"
+          mod="$GITHUB_WORKSPACE/neoforge/build/libs/PersonalShelter-NeoForge-${version}.jar"
+          test -f "$mod"
+          mkdir -p "$RUNNER_TEMP/personalshelter-smoke"
+          cd "$RUNNER_TEMP/personalshelter-smoke"
+          curl --fail --location --retry 3 --silent --show-error \
+            https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.267/neoforge-21.1.267-installer.jar \
+            -o installer.jar
+          java -jar installer.jar --installServer
+          mkdir -p mods
+          cp "$mod" mods/
+          curl --fail --location --retry 3 --silent --show-error \
+            https://maven.architectury.dev/dev/architectury/architectury-neoforge/13.0.12/architectury-neoforge-13.0.12.jar \
+            -o mods/architectury-neoforge.jar
+          # The fresh server deliberately stops at the EULA gate, without loading a real world.
+          # Vanilla bootstrap (including LavaFluid) and mod initialization occur first.
+          set +e
+          timeout 150s java -Xmx3G @libraries/net/neoforged/neoforge/21.1.267/unix_args.txt nogui > startup.log 2>&1
+          status=$?
+          set -e
+          cat startup.log
+          test "$status" -ne 124
+          grep -qi 'agree to the EULA' startup.log
+          if grep -Eqi 'Mixin apply failed|MixinTransformerError|InvalidInjectionException|InjectionError|Critical injection failure|Failed to start the minecraft server' startup.log; then
+            exit 1
+          fi
